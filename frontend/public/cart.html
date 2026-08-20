@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your cart — Campus Bites</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col">
+  <header id="site-header"></header>
+
+  <main class="flex-1 max-w-4xl mx-auto px-4 sm:px-6 py-10 w-full">
+    <h1 class="text-3xl font-extrabold text-slate-800 mb-8 animate-fadeIn reveal">Your cart</h1>
+
+    <!-- empty state -->
+    <div id="empty-state" class="hidden text-center py-16">
+      <div class="text-6xl mb-4">🛒</div>
+      <h2 class="text-xl font-bold text-slate-700">Your cart is empty</h2>
+      <p class="text-slate-500 mt-1">Craving something? Browse the restaurants.</p>
+      <a href="restaurants.html" class="inline-block mt-6 bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 py-3 rounded-xl transition-all duration-200 hover:shadow-lg">
+        Browse restaurants
+      </a>
+    </div>
+
+    <!-- cart content -->
+    <div id="cart-content" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 space-y-3" id="items"></div>
+
+      <div class="bg-white rounded-2xl border border-slate-100 shadow p-6 h-fit animate-slideUp">
+        <h2 class="font-bold text-slate-800 text-lg mb-4">Order summary</h2>
+        <div class="flex justify-between text-slate-600 mb-2 text-sm">
+          <span>Subtotal</span><span id="sum-subtotal">₦0.00</span>
+        </div>
+        <div class="flex justify-between text-slate-600 mb-2 text-sm">
+          <span>Delivery fee</span><span class="text-emerald-600 font-semibold">₦0.00</span>
+        </div>
+        <div class="flex justify-between font-extrabold text-slate-800 text-lg border-t border-slate-100 pt-3 mt-3">
+          <span>Total</span><span id="sum-total" class="text-amber-600">₦0.00</span>
+        </div>
+        <a href="checkout.html" class="mt-6 block text-center bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-all duration-200 hover:shadow-lg">
+          Proceed to checkout →
+        </a>
+        <button id="clear-cart" class="mt-3 w-full text-sm text-slate-400 hover:text-red-600 transition-colors">Clear cart</button>
+      </div>
+    </div>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    CampusBites.registerPage('cart', function () {
+      const emptyState = document.getElementById('empty-state');
+      const content = document.getElementById('cart-content');
+      const itemsEl = document.getElementById('items');
+
+      function render() {
+        const cart = CampusBites.cart.getCart();
+        if (!cart || cart.items.length === 0) {
+          emptyState.classList.remove('hidden');
+          content.classList.add('hidden');
+          CampusBites.updateCartBadge();
+          return;
+        }
+
+        emptyState.classList.add('hidden');
+        content.classList.remove('hidden');
+
+        itemsEl.innerHTML = `
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-2">
+            <p class="text-sm font-semibold text-slate-500">Ordering from</p>
+            <p class="font-extrabold text-slate-800">${cart.restaurantName}</p>
+          </div>
+          ${cart.items.map((i) => `
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-4 animate-scaleIn">
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-slate-800">${i.name}</p>
+                <p class="text-sm text-slate-500">${CampusBites.formatMoney(i.price)} each</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button data-id="${i.menuItemId}" data-delta="-1" class="qty-btn w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 transition-colors">−</button>
+                <span class="w-8 text-center font-bold">${i.qty}</span>
+                <button data-id="${i.menuItemId}" data-delta="1" class="qty-btn w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 transition-colors">+</button>
+              </div>
+              <div class="w-20 text-right">
+                <p class="font-extrabold text-amber-600">${CampusBites.formatMoney(i.price * i.qty)}</p>
+                <button data-id="${i.menuItemId}" class="remove-btn text-xs text-slate-400 hover:text-red-600 transition-colors mt-1">Remove</button>
+              </div>
+            </div>
+          `).join('')}
+        `;
+
+        document.getElementById('sum-subtotal').textContent = CampusBites.formatMoney(CampusBites.cart.getCartTotal());
+        document.getElementById('sum-total').textContent = CampusBites.formatMoney(CampusBites.cart.getCartTotal());
+
+        itemsEl.querySelectorAll('.qty-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const item = cart.items.find((x) => x.menuItemId === Number(btn.dataset.id));
+            if (!item) return;
+            CampusBites.cart.setQuantity(item.menuItemId, item.qty + Number(btn.dataset.delta));
+            render();
+            CampusBites.updateCartBadge();
+          });
+        });
+
+        itemsEl.querySelectorAll('.remove-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            CampusBites.cart.removeFromCart(Number(btn.dataset.id));
+            render();
+            CampusBites.updateCartBadge();
+          });
+        });
+
+        CampusBites.updateCartBadge();
+      }
+
+      document.getElementById('clear-cart').addEventListener('click', () => {
+        CampusBites.cart.clearCart();
+        CampusBites.showToast('Cart cleared.', 'info');
+        render();
+        CampusBites.updateCartBadge();
+      });
+
+      render();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My orders — Campus Bites</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col">
+  <header id="site-header"></header>
+
+  <main class="flex-1 max-w-4xl mx-auto px-4 sm:px-6 py-10 w-full">
+    <h1 class="text-3xl font-extrabold text-slate-800 mb-8 animate-fadeIn reveal">My orders</h1>
+
+    <!-- not logged in -->
+    <div id="login-prompt" class="hidden text-center py-16">
+      <div class="text-6xl mb-4">🔒</div>
+      <h2 class="text-xl font-bold text-slate-700">Log in to see your orders</h2>
+      <a href="login.html" class="inline-block mt-6 bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 py-3 rounded-xl transition-all duration-200 hover:shadow-lg">
+        Log in
+      </a>
+    </div>
+
+    <!-- skeleton -->
+    <div id="skeleton" class="space-y-4">
+      <div class="skeleton h-32"></div><div class="skeleton h-32"></div>
+    </div>
+
+    <!-- orders -->
+    <div id="orders" class="space-y-4 stagger"></div>
+    <p id="empty" class="hidden text-center text-slate-400 py-16 text-lg">No orders yet — your first meal is a click away!</p>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/orders.js"></script>
+</body>
+</html>

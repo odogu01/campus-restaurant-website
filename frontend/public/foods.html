@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All Foods — Campus Bites</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="bg-slate-50">
+  <header id="site-header"></header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+    <div class="text-center mb-8 animate-fadeIn reveal">
+      <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800">All foods</h1>
+      <p class="text-slate-500 mt-2">Every dish from every campus restaurant, in one place</p>
+    </div>
+
+    <!-- Controls: search + category chips + restaurant filter -->
+    <div class="mb-6 space-y-3 animate-slideUp">
+      <form id="food-search" class="max-w-xl mx-auto flex items-center bg-white rounded-2xl shadow-sm border border-slate-200 p-1.5">
+        <input
+          id="food-search-input"
+          type="text"
+          placeholder="Search foods… e.g. chicken, chapman"
+          class="flex-1 px-4 py-2.5 text-slate-800 rounded-xl outline-none bg-transparent"
+        />
+        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2.5 rounded-xl transition-colors duration-200">
+          Search
+        </button>
+      </form>
+
+      <div id="food-filters" class="flex flex-wrap items-center justify-center gap-2">
+        <label class="text-sm font-semibold text-slate-500">Restaurant:</label>
+        <select id="food-rest-select" class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-sm font-semibold text-slate-700 outline-none">
+          <option value="">All restaurants</option>
+        </select>
+        <span class="hidden sm:inline text-slate-300">|</span>
+        <div id="food-cats" class="flex flex-wrap gap-2"></div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="food-skeleton" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="skeleton h-64"></div>
+      <div class="skeleton h-64"></div>
+      <div class="skeleton h-64"></div>
+    </div>
+    <div id="food-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger"></div>
+    <p id="food-empty" class="hidden text-center text-slate-400 py-16">No foods match — try a different search.</p>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/foods.js"></script>
+</body>
+</html>

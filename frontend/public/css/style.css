@@ -1,0 +1,247 @@
+/* ============================================================
+   Campus Bites — custom styles & animations
+   Tailwind handles utility classes; this file adds the polish.
+   ============================================================ */
+
+/* ---------- Base ---------- */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #f8fafc;
+  /* Subtle whole-page entrance */
+  animation: fadeIn 0.4s ease both;
+}
+
+/* ---------- Page load animations ---------- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+@keyframes popIn {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-fadeIn  { animation: fadeIn 0.5s ease both; }
+.animate-slideUp { animation: slideUp 0.5s ease both; }
+.animate-slideDown { animation: slideDown 0.3s ease both; }
+.animate-scaleIn { animation: scaleIn 0.25s ease both; }
+.animate-popIn   { animation: popIn 0.35s ease both; }
+
+/* Stagger helper for card grids */
+.stagger > * { animation: slideUp 0.5s ease both; }
+.stagger > *:nth-child(1) { animation-delay: 0.03s; }
+.stagger > *:nth-child(2) { animation-delay: 0.09s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.21s; }
+.stagger > *:nth-child(5) { animation-delay: 0.27s; }
+.stagger > *:nth-child(6) { animation-delay: 0.33s; }
+
+/* ---------- Restaurant card hover glow ---------- */
+.card-glow {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-glow:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px -8px rgba(245, 158, 11, 0.45);
+}
+
+/* ---------- Buttons ---------- */
+.btn-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Disabled button while a form is submitting */
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Subtle lift on form submit buttons */
+button[type='submit']:not(:disabled) {
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+button[type='submit']:hover:not(:disabled) {
+  transform: scale(1.02);
+}
+
+/* Add-to-cart flash (green) triggered from JS */
+.add-btn.flash {
+  animation: addFlash 0.45s ease;
+}
+@keyframes addFlash {
+  0%   { background-color: #f59e0b; transform: scale(1); }
+  40%  { background-color: #059669; transform: scale(1.12); }
+  100% { background-color: #f59e0b; transform: scale(1); }
+}
+
+/* ---------- Toast notifications ---------- */
+.toast {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 100;
+  min-width: 16rem;
+  max-width: 22rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #fff;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+  animation: slideDown 0.3s ease both;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.toast-success { background: #059669; }
+.toast-error   { background: #dc2626; }
+.toast-info    { background: #2563eb; }
+.toast-warning { background: #d97706; }
+.toast.hide { animation: slideDown 0.3s ease reverse both; }
+
+/* ---------- Status badges (orders) ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.badge-pending        { background: #fef3c7; color: #92400e; }
+.badge-confirmed      { background: #dbeafe; color: #1e40af; }
+.badge-preparing      { background: #ede9fe; color: #5b21b6; }
+.badge-ready_for_pickup { background: #cffafe; color: #155e75; }
+.badge-delivered      { background: #d1fae5; color: #065f46; }
+.badge-cancelled      { background: #fee2e2; color: #991b1b; }
+.badge-paid           { background: #d1fae5; color: #065f46; }
+
+/* Pulsing dot on live order badges */
+.badge .dot {
+  width: 0.45rem; height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulseSoft 1.4s ease infinite;
+}
+
+/* Badge pulse when a status change is rendered (from JS polling/updates) */
+@keyframes badgePulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.14); box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.25); }
+  100% { transform: scale(1); }
+}
+.badge-pulse {
+  animation: badgePulse 0.55s ease;
+}
+
+/* ---------- Loader skeletons ---------- */
+.skeleton {
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ---------- Add-to-cart "+1" popup ---------- */
+.add-pop {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: #f59e0b;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  border-radius: 9999px;
+  padding: 0.15rem 0.5rem;
+  animation: popIn 0.35s ease both;
+  pointer-events: none;
+}
+
+/* ---------- Hero background ---------- */
+.hero-gradient {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 45%, #b45309 100%);
+}
+
+/* ---------- Section scroll reveal ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---------- Misc ---------- */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* ---------- Accessibility: respect reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- Accessibility: visible focus rings ---------- */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(245, 158, 11, 0.6);
+  outline-offset: 2px;
+}

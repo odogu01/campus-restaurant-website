@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Campus Bites — Order from campus restaurants</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="bg-slate-50">
+  <header id="site-header"></header>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero-gradient text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-28 text-center animate-fadeIn">
+      <h1 class="text-4xl md:text-6xl font-black tracking-tight leading-tight">
+        Hungry between classes?
+        <span class="text-amber-400 block">Order from campus favourites.</span>
+      </h1>
+      <p class="mt-4 text-lg text-slate-300 max-w-2xl mx-auto">
+        Browse restaurants, pick your meal, pay instantly, and grab it on your way to the next lecture.
+      </p>
+
+      <!-- search bar -->
+      <form id="home-search" class="mt-8 max-w-xl mx-auto flex items-center bg-white rounded-2xl shadow-xl p-1.5">
+        <input
+          id="home-search-input"
+          type="text"
+          placeholder="Search for a restaurant… e.g. grill, pizza"
+          class="flex-1 px-4 py-3 text-slate-800 rounded-xl outline-none bg-transparent"
+        />
+        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3 rounded-xl transition-colors duration-200">
+          Search
+        </button>
+      </form>
+
+      <div class="mt-8 flex flex-wrap justify-center gap-3 text-sm">
+        <a href="restaurants.html" class="bg-white/10 hover:bg-white/20 backdrop-blur px-5 py-2.5 rounded-full font-semibold transition-colors duration-200">Browse all restaurants</a>
+        <a href="foods.html" class="bg-white/10 hover:bg-white/20 backdrop-blur px-5 py-2.5 rounded-full font-semibold transition-colors duration-200">Browse all foods</a>
+        <a href="vendor-register.html" class="bg-white/10 hover:bg-white/20 backdrop-blur px-5 py-2.5 rounded-full font-semibold transition-colors duration-200">Open a restaurant</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURED RESTAURANTS ============ -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 py-14">
+    <div class="flex items-end justify-between mb-6">
+      <div>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800">Popular on campus</h2>
+        <p class="text-slate-500 mt-1">Fresh from the kitchens near you</p>
+      </div>
+      <a href="restaurants.html" class="text-amber-600 font-semibold hover:text-amber-700 transition-colors">View all →</a>
+    </div>
+
+    <!-- skeleton loader -->
+    <div id="featured-skeleton" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="skeleton h-56"></div>
+      <div class="skeleton h-56"></div>
+      <div class="skeleton h-56"></div>
+    </div>
+
+    <div id="featured-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger"></div>
+    <p id="featured-empty" class="hidden text-center text-slate-400 py-10">No restaurants yet — be the first to open one!</p>
+  </section>
+
+  <!-- ============ FRESH FOODS ============ -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 py-14">
+    <div class="flex items-end justify-between mb-6">
+      <div>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800">Fresh picks</h2>
+        <p class="text-slate-500 mt-1">Every dish from every campus kitchen</p>
+      </div>
+      <a href="foods.html" class="text-amber-600 font-semibold hover:text-amber-700 transition-colors">View all foods →</a>
+    </div>
+
+    <div id="foods-skeleton" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="skeleton h-64"></div>
+      <div class="skeleton h-64"></div>
+      <div class="skeleton h-64"></div>
+    </div>
+    <div id="foods-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger"></div>
+    <p id="foods-empty" class="hidden text-center text-slate-400 py-10">No foods yet — restaurants haven't posted menus.</p>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section class="bg-white py-14">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 text-center mb-10">How it works</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center reveal">
+          <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl font-black mb-4">1</div>
+          <h3 class="font-bold text-slate-800 mb-2">Pick a restaurant</h3>
+          <p class="text-slate-500 text-sm">Browse restaurants by cuisine or search by name.</p>
+        </div>
+        <div class="text-center reveal">
+          <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl font-black mb-4">2</div>
+          <h3 class="font-bold text-slate-800 mb-2">Order & pay</h3>
+          <p class="text-slate-500 text-sm">Add items to your cart and check out in seconds. Payments are simulated.</p>
+        </div>
+        <div class="text-center reveal">
+          <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl font-black mb-4">3</div>
+          <h3 class="font-bold text-slate-800 mb-2">Pick up & enjoy</h3>
+          <p class="text-slate-500 text-sm">Track your order live and collect it when it's ready.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA ============ -->
+  <section class="max-w-4xl mx-auto px-4 sm:px-6 py-14 text-center">
+    <div class="bg-gradient-to-r from-amber-500 to-orange-600 rounded-3xl p-8 md:p-12 text-white shadow-xl animate-slideUp">
+      <h2 class="text-2xl md:text-3xl font-extrabold">Are you a campus chef?</h2>
+      <p class="mt-2 text-amber-100">Bring your food to thousands of hungry students. It takes two minutes to apply.</p>
+      <a href="vendor-register.html" class="mt-6 inline-block bg-white text-orange-600 font-bold px-8 py-3 rounded-xl hover:bg-amber-50 transition-colors duration-200">
+        Apply to sell on Campus Bites
+      </a>
+    </div>
+  </section>
+
+  <footer id="site-footer"></footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // Homepage: featured restaurants + fresh picks (all foods).
+    CampusBites.registerPage('index', async function () {
+      const grid = document.getElementById('featured-grid');
+      const skel = document.getElementById('featured-skeleton');
+      const empty = document.getElementById('featured-empty');
+      const fgrid = document.getElementById('foods-grid');
+      const fskel = document.getElementById('foods-skeleton');
+      const fempty = document.getElementById('foods-empty');
+
+      try {
+        const data = await CampusBites.apiGet('/api/restaurants');
+        skel.classList.add('hidden');
+        const featured = data.restaurants.slice(0, 6);
+
+        if (featured.length === 0) {
+          empty.classList.remove('hidden');
+        } else {
+          grid.innerHTML = featured.map((r) => `
+            <a href="menu.html?id=${r.id}" class="card-glow bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
+              <div class="h-36 bg-gradient-to-br ${['from-amber-400 to-orange-500','from-emerald-400 to-teal-500','from-sky-400 to-blue-500','from-rose-400 to-pink-500','from-violet-400 to-purple-500','from-lime-400 to-green-500'][r.id % 6]} flex items-center justify-center">
+                <span class="text-5xl">${r.logo_url ? `<img src="${r.logo_url}" class="h-24 w-24 rounded-2xl object-cover shadow" alt="${r.name}">` : '🍽️'}</span>
+              </div>
+              <div class="p-5">
+                <div class="flex items-start justify-between gap-2">
+                  <h3 class="font-bold text-slate-800">${r.name}</h3>
+                  <span class="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-1 rounded-full whitespace-nowrap">${r.menu_items_count} items</span>
+                </div>
+                ${r.description ? `<p class="text-sm text-slate-500 mt-1 line-clamp-2">${r.description}</p>` : ''}
+                <div class="flex items-center gap-2 mt-3 text-sm">
+                  ${r.cuisine_type ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${r.cuisine_type}</span>` : ''}
+                  ${r.address ? `<span class="text-slate-400">📍 ${r.address}</span>` : ''}
+                </div>
+              </div>
+            </a>
+          `).join('');
+
+          document.querySelectorAll('#featured-grid .card-glow').forEach((el) => {
+            el.addEventListener('mouseenter', () => el.classList.add('hover:shadow-xl'));
+          });
+        }
+      } catch (err) {
+        skel.classList.add('hidden');
+        empty.textContent = 'Could not load restaurants. Is the backend running?';
+        empty.classList.remove('hidden');
+        console.error(err);
+      }
+
+      try {
+        const fdata = await CampusBites.apiGet('/api/menu-items', { auth: false, query: {} });
+        fskel.classList.add('hidden');
+        const picks = fdata.items.slice(0, 6);
+        if (picks.length === 0) {
+          fempty.classList.remove('hidden');
+        } else {
+          fgrid.innerHTML = picks.map((item) => `
+            <a href="menu.html?id=${item.restaurant_id}" class="card-glow bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
+              <div class="h-40 bg-slate-100 relative">
+                ${item.images && item.images.length
+                  ? `<img src="${item.images[0]}" class="w-full h-full object-cover" alt="${item.name}" onerror="this.style.display='none'">`
+                  : '<div class="w-full h-full flex items-center justify-center text-4xl">🍽️</div>'}
+              </div>
+              <div class="p-4">
+                <div class="flex items-start justify-between gap-2">
+                  <h3 class="font-bold text-slate-800 leading-tight">${item.name}</h3>
+                  <p class="font-extrabold text-amber-600 whitespace-nowrap">${CampusBites.formatMoney(item.price)}</p>
+                </div>
+                <p class="text-xs text-amber-600 font-semibold mt-1">${item.restaurant_name}</p>
+                ${item.description ? `<p class="text-sm text-slate-500 mt-1 line-clamp-2">${item.description}</p>` : ''}
+              </div>
+            </a>
+          `).join('');
+        }
+      } catch (err) {
+        fskel.classList.add('hidden');
+        fempty.textContent = 'Could not load foods. Is the backend running?';
+        fempty.classList.remove('hidden');
+        console.error(err);
+      }
+    });
+
+    // Homepage search → restaurants page
+    document.getElementById('home-search').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = document.getElementById('home-search-input').value.trim();
+      window.location.href = 'restaurants.html' + (q ? '?search=' + encodeURIComponent(q) : '');
+    });
+  </script>
+</body>
+</html>

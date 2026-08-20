@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Restaurants — Campus Bites</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="bg-slate-50">
+  <header id="site-header"></header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+    <div class="text-center mb-8 animate-fadeIn reveal">
+      <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800">Explore restaurants</h1>
+      <p class="text-slate-500 mt-2">Find your next meal on campus · <a href="foods.html" class="text-amber-600 font-semibold hover:text-amber-700 transition-colors">or browse all foods →</a></p>
+    </div>
+
+    <!-- search + cuisine chips -->
+    <div class="max-w-xl mx-auto mb-6 animate-slideDown">
+      <form id="search-form" class="flex items-center bg-white rounded-2xl shadow border border-slate-200 p-1.5">
+        <input id="search-input" type="text" placeholder="Search restaurant name…"
+          class="flex-1 px-4 py-2.5 text-slate-800 rounded-xl outline-none bg-transparent" />
+        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors duration-200">Search</button>
+      </form>
+    </div>
+
+    <div id="cuisine-chips" class="flex flex-wrap justify-center gap-2 mb-8"></div>
+
+    <!-- skeleton -->
+    <div id="skeleton" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="skeleton h-56"></div><div class="skeleton h-56"></div><div class="skeleton h-56"></div>
+      <div class="skeleton h-56"></div><div class="skeleton h-56"></div><div class="skeleton h-56"></div>
+    </div>
+
+    <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger"></div>
+    <p id="empty" class="hidden text-center text-slate-400 py-16 text-lg">No restaurants match your search.</p>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const GRADIENTS = [
+      'from-amber-400 to-orange-500','from-emerald-400 to-teal-500','from-sky-400 to-blue-500',
+      'from-rose-400 to-pink-500','from-violet-400 to-purple-500','from-lime-400 to-green-500',
+    ];
+
+    CampusBites.registerPage('restaurants', async function () {
+      const params = new URLSearchParams(window.location.search);
+      const search = params.get('search') || '';
+      let cuisine = params.get('cuisine') || '';
+
+      if (search) document.getElementById('search-input').value = search;
+
+      await load(search, cuisine);
+
+      document.getElementById('search-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        load(document.getElementById('search-input').value.trim(), cuisine);
+      });
+    });
+
+    async function load(search, cuisine) {
+      const grid = document.getElementById('grid');
+      const skel = document.getElementById('skeleton');
+      const empty = document.getElementById('empty');
+      skel.classList.remove('hidden');
+      grid.innerHTML = '';
+      empty.classList.add('hidden');
+
+      try {
+        const data = await CampusBites.apiGet('/api/restaurants', {
+          query: { search, cuisine },
+        });
+        skel.classList.add('hidden');
+
+        renderChips(data.restaurants, cuisine, (c) => load(search, c));
+
+        if (data.restaurants.length === 0) {
+          empty.classList.remove('hidden');
+          return;
+        }
+
+        grid.innerHTML = data.restaurants.map((r) => `
+          <a href="menu.html?id=${r.id}" class="card-glow bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
+            <div class="h-36 bg-gradient-to-br ${GRADIENTS[r.id % GRADIENTS.length]} flex items-center justify-center">
+              ${r.logo_url ? `<img src="${r.logo_url}" class="h-24 w-24 rounded-2xl object-cover shadow" alt="">` : '<span class="text-5xl">🍽️</span>'}
+            </div>
+            <div class="p-5">
+              <div class="flex items-start justify-between gap-2">
+                <h3 class="font-bold text-slate-800">${r.name}</h3>
+                <span class="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-1 rounded-full whitespace-nowrap">${r.menu_items_count} items</span>
+              </div>
+              ${r.description ? `<p class="text-sm text-slate-500 mt-1 line-clamp-2">${r.description}</p>` : ''}
+              <div class="flex flex-wrap items-center gap-2 mt-3 text-sm">
+                ${r.cuisine_type ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${r.cuisine_type}</span>` : ''}
+                ${r.address ? `<span class="text-slate-400">📍 ${r.address}</span>` : ''}
+              </div>
+            </div>
+          </a>
+        `).join('');
+      } catch (err) {
+        skel.classList.add('hidden');
+        empty.textContent = 'Could not load restaurants. Is the backend running?';
+        empty.classList.remove('hidden');
+        console.error(err);
+      }
+    }
+
+    function renderChips(restaurants, activeCuisine, onClick) {
+      const cuisines = ['', ...new Set(restaurants.map((r) => r.cuisine_type).filter(Boolean))];
+      const chips = document.getElementById('cuisine-chips');
+      chips.innerHTML = cuisines.map((c) => `
+        <button data-c="${c || ''}" class="chip px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+          (c || '') === (activeCuisine || '')
+            ? 'bg-amber-500 text-white shadow'
+            : 'bg-white text-slate-600 border border-slate-200 hover:border-amber-400 hover:text-amber-600'
+        }">${c || 'All'}</button>
+      `).join('');
+      chips.querySelectorAll('.chip').forEach((btn) => {
+        btn.addEventListener('click', () => onClick(btn.dataset.c));
+      });
+    }
+  </script>
+</body>
+</html>

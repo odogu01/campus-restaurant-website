@@ -15,6 +15,12 @@
  *                     and ONLY THEN is money credited to the vendor (vendor_paid=1)
  *   cancelled      -> customer may cancel while pending or preparing
  *
+ * PROTEINS (per product decision):
+ *   Menu items expose available proteins (menu_item_proteins). Customers
+ *   get the restaurant's PRIMARY protein preselected by default (qty 1),
+ *   may pick several proteins and buy more than one of each. Protein
+ *   prices (set by the vendor) are snapshotted into order_item_proteins.
+ *
  * PAYMENT SIMULATION (important):
  * With PAYMENT_ENABLED=false (current default) there is NO third-party payment
  * call. The order is created as pending and payment_status is immediately set to
@@ -56,8 +62,16 @@ function canPerform(role, isOwnerVendor, isOrderCustomer, fromStatus, toStatus) 
 
 /* ------------------------------------------------------------------ */
 /* POST /api/orders  (customer only)                                   */
-/* Body: { restaurantId, items: [{menuItemId, quantity}], orderType,   */
-/*         deliveryAddress?, specialInstructions?, paymentMethod }      */
+/* Body: { restaurantId, items: [{ menuItemId, quantity,               */
+/*         proteins?: [{ proteinId, quantity }] }], orderType,         */
+/*         deliveryAddress?, specialInstructions?, paymentMethod }     */
+/*                                                                     */
+/* PROTEINS:                                                           */
+/*   - each item exposes its AVAILABLE proteins (menu_item_proteins)   */
+/*   - if the customer sends no proteins for an item that HAS them,    */
+/*     the restaurant's PRIMARY protein is added automatically (qty 1) */
+/*   - the customer may pick several proteins, each with its own qty   */
+/*   - totals = item base (qty x price) + proteins (qty x price)       */
 /* ------------------------------------------------------------------ */
 async function placeOrder(req, res, next) {
   // Customer-only endpoint.
@@ -69,7 +83,7 @@ async function placeOrder(req, res, next) {
   try {
     const {
       restaurantId,
-      items, // [{ menuItemId, quantity }]
+      items, // [{ menuItemId, quantity, proteins: [{ proteinId, quantity }] }]
       orderType,
       deliveryAddress = null,
       specialInstructions = null,
@@ -112,17 +126,69 @@ async function placeOrder(req, res, next) {
 
     const priceMap = new Map(menuRows.map((m) => [m.id, m]));
 
-    // 4. Compute total — sum of quantity * unit price. NO delivery fee.
-    const lineItems = items.map(({ menuItemId, quantity }) => ({
-      menuItemId,
-      quantity,
-      unit_price: priceMap.get(menuItemId).price,
-    }));
-    const totalAmount = Math.round(
-      lineItems.reduce((sum, li) => sum + li.quantity * li.unit_price, 0) * 100
-    ) / 100;
+    // 3b. Load the proteins available with each ordered item (batched).
+    const [proteinRows] = await db.query(
+      `SELECT mip.menu_item_id, p.id, p.name, p.price, p.is_primary
+       FROM menu_item_proteins mip
+       JOIN proteins p ON p.id = mip.protein_id
+       WHERE mip.menu_item_id IN (${placeholders})`,
+      itemIds
+    );
+    const proteinsByItem = new Map();
+    for (const row of proteinRows) {
+      if (!proteinsByItem.has(row.menu_item_id)) proteinsByItem.set(row.menu_item_id, []);
+      proteinsByItem.get(row.menu_item_id).push({
+        id: row.id,
+        name: row.name,
+        price: Number(row.price),
+        is_primary: row.is_primary === 1,
+      });
+    }
 
-    // 5. Create the order + items atomically, then apply the payment simulation.
+    // 4. Compute totals — sum of quantity * unit price. NO delivery fee.
+    //    Protein selections add their own quantity * price.
+    const lineItems = [];
+    let totalAmount = 0;
+
+    for (const { menuItemId, quantity, proteins } of items) {
+      const menuRow = priceMap.get(menuItemId);
+      const available = proteinsByItem.get(menuItemId) || [];
+      const availableMap = new Map(available.map((p) => [p.id, p]));
+      const chosen = [];
+
+      if (available.length > 0) {
+        if (!Array.isArray(proteins) || proteins.length === 0) {
+          // Default: the restaurant's PRIMARY protein, quantity 1.
+          const primary = available.find((p) => p.is_primary) || available[0];
+          chosen.push({ protein: primary, quantity: 1 });
+        } else {
+          for (const sel of proteins) {
+            const protein = availableMap.get(Number(sel.proteinId));
+            if (!protein) {
+              return res.status(400).json({
+                error: `Protein ${sel.proteinId} is not available with '${menuRow.name}'.`,
+              });
+            }
+            if (!Number.isInteger(Number(sel.quantity)) || Number(sel.quantity) < 1) {
+              return res.status(422).json({
+                error: `Protein '${protein.name}' needs a quantity of at least 1.`,
+              });
+            }
+            chosen.push({ protein, quantity: Number(sel.quantity) });
+          }
+        }
+      }
+
+      const lineFood = quantity * Number(menuRow.price);
+      const lineProteins = chosen.reduce((s, c) => s + c.quantity * c.protein.price, 0);
+      totalAmount += lineFood + lineProteins;
+      lineItems.push({ menuItemId, quantity, unit_price: menuRow.price, chosen });
+    }
+
+    totalAmount = Math.round(totalAmount * 100) / 100;
+
+    // 5. Create the order + items + protein selections atomically,
+    //    then apply the payment simulation.
     conn = await db.getConnection();
     await conn.beginTransaction();
 
@@ -136,10 +202,18 @@ async function placeOrder(req, res, next) {
     const orderId = orderResult.insertId;
 
     for (const li of lineItems) {
-      await conn.query(
+      const [itemRes] = await conn.query(
         'INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price) VALUES (?, ?, ?, ?)',
         [orderId, li.menuItemId, li.quantity, li.unit_price]
       );
+      for (const c of li.chosen) {
+        await conn.query(
+          `INSERT INTO order_item_proteins
+             (order_item_id, protein_id, protein_name, quantity, unit_price)
+           VALUES (?, ?, ?, ?, ?)`,
+          [itemRes.insertId, c.protein.id, c.protein.name, c.quantity, c.protein.price]
+        );
+      }
     }
 
     // 6. Simulated payment: no real Paystack call.
@@ -237,7 +311,32 @@ async function getOrderById(req, res, next) {
       [order.id]
     );
 
-    return res.json({ order, items });
+    // Attach the protein selections (snapshotted names + prices).
+    const itemIds = items.map((i) => i.id);
+    const proteinsByItem = new Map();
+    if (itemIds.length > 0) {
+      const itemPh = itemIds.map(() => '?').join(',');
+      const [proteinRows] = await db.query(
+        `SELECT order_item_id, protein_id, protein_name, quantity, unit_price, subtotal
+         FROM order_item_proteins
+         WHERE order_item_id IN (${itemPh})
+         ORDER BY order_item_id, id`,
+        itemIds
+      );
+      for (const p of proteinRows) {
+        if (!proteinsByItem.has(p.order_item_id)) proteinsByItem.set(p.order_item_id, []);
+        proteinsByItem.get(p.order_item_id).push({
+          proteinId: p.protein_id,
+          name: p.protein_name,
+          quantity: p.quantity,
+          unit_price: Number(p.unit_price),
+          subtotal: Number(p.subtotal),
+        });
+      }
+    }
+    const withProteins = items.map((it) => ({ ...it, proteins: proteinsByItem.get(it.id) || [] }));
+
+    return res.json({ order, items: withProteins });
   } catch (err) {
     return next(err);
   }
@@ -365,7 +464,8 @@ async function getVendorOrders(req, res, next) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Helper — attach order_items (with item names) to a list of orders.  */
+/* Helper — attach order_items (with item names AND protein            */
+/* selections) to a list of orders.                                    */
 /* ------------------------------------------------------------------ */
 async function attachItems(orders) {
   if (orders.length === 0) return orders;
@@ -381,10 +481,34 @@ async function attachItems(orders) {
     ids
   );
 
+  // Attach protein selections to each order item.
+  const itemIds = items.map((i) => i.id);
+  const proteinsByItem = new Map();
+  if (itemIds.length > 0) {
+    const itemPh = itemIds.map(() => '?').join(',');
+    const [proteinRows] = await db.query(
+      `SELECT order_item_id, protein_id, protein_name, quantity, unit_price, subtotal
+       FROM order_item_proteins
+       WHERE order_item_id IN (${itemPh})
+       ORDER BY order_item_id, id`,
+      itemIds
+    );
+    for (const p of proteinRows) {
+      if (!proteinsByItem.has(p.order_item_id)) proteinsByItem.set(p.order_item_id, []);
+      proteinsByItem.get(p.order_item_id).push({
+        proteinId: p.protein_id,
+        name: p.protein_name,
+        quantity: p.quantity,
+        unit_price: Number(p.unit_price),
+        subtotal: Number(p.subtotal),
+      });
+    }
+  }
+
   const byOrder = new Map();
   for (const it of items) {
     if (!byOrder.has(it.order_id)) byOrder.set(it.order_id, []);
-    byOrder.get(it.order_id).push(it);
+    byOrder.get(it.order_id).push({ ...it, proteins: proteinsByItem.get(it.id) || [] });
   }
 
   return orders.map((o) => ({ ...o, items: byOrder.get(o.id) || [] }));

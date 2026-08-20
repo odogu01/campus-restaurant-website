@@ -6,7 +6,7 @@
  * Ownership is enforced by middleware/ownership.js.
  */
 const db = require('../config/db');
-const { attachImages } = require('./menuController');
+const { attachImages, attachProteins } = require('./menuController');
 
 /* ------------------------------------------------------------------ */
 /* GET /api/restaurants  (public)                                      */
@@ -81,14 +81,15 @@ async function getRestaurant(req, res, next) {
     }
 
     const [menu] = await db.query(
-      `SELECT id, name, description, price, category, image_url, is_available, created_at
+      `SELECT id, food_id, name, description, price, image_url, is_available, created_at
        FROM menu_items
        WHERE restaurant_id = ?
-       ORDER BY category, name`,
+       ORDER BY name`,
       [id]
     );
 
-    return res.json({ restaurant, menu: await attachImages(menu) });
+    const withImages = await attachImages(menu);
+    return res.json({ restaurant, menu: await attachProteins(withImages) });
   } catch (err) {
     return next(err);
   }
@@ -196,4 +197,246 @@ async function getMyRestaurants(req, res, next) {
   }
 }
 
-module.exports = { listRestaurants, getRestaurant, createRestaurant, updateRestaurant, softDeleteRestaurant, getMyRestaurants };
+/* ------------------------------------------------------------------ */
+/* FOODS — the foods a restaurant sells (owner/admin)                  */
+/*   GET    /api/restaurants/:restaurantId/foods                       */
+/*   POST   /api/restaurants/:restaurantId/foods   { name }            */
+/*   DELETE /api/foods/:id                                             */
+/* ------------------------------------------------------------------ */
+async function listFoods(req, res, next) {
+  try {
+    const [rows] = await db.query(
+      'SELECT id, restaurant_id, name, created_at FROM foods WHERE restaurant_id = ? ORDER BY name',
+      [req.restaurant.id]
+    );
+    return res.json({ foods: rows });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function createFood(req, res, next) {
+  try {
+    const name = String(req.body.name || '').trim();
+    if (!name) {
+      return res.status(422).json({ error: 'Food name is required.' });
+    }
+    const [result] = await db.query(
+      'INSERT INTO foods (restaurant_id, name) VALUES (?, ?)',
+      [req.restaurant.id, name]
+    );
+    const [rows] = await db.query('SELECT * FROM foods WHERE id = ?', [result.insertId]);
+    return res.status(201).json({ message: 'Food added.', food: rows[0] });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'This food is already on your list.' });
+    }
+    return next(err);
+  }
+}
+
+async function deleteFood(req, res, next) {
+  try {
+    await db.query('DELETE FROM foods WHERE id = ?', [req.food.id]);
+    return res.json({ message: 'Food removed.', food: { id: req.food.id } });
+  } catch (err) {
+    // FK violation (menu_items.food_id RESTRICT)
+    if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
+      return res.status(409).json({
+        error: 'This food is used by menu items. Delete those items first (or set them unavailable).',
+      });
+    }
+    return next(err);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* PROTEINS — owner/admin                                              */
+/*   GET    /api/restaurants/:restaurantId/proteins                    */
+/*   POST   /api/restaurants/:restaurantId/proteins                    */
+/*          body: { name, price, is_primary? }                         */
+/*   PUT    /api/proteins/:id   body: { name?, price?, is_primary? }   */
+/*   DELETE /api/proteins/:id                                          */
+/*                                                                     */
+/* PRIMARY RULE (exactly one primary per restaurant):                  */
+/*   - the first protein added is forced to be the primary             */
+/*   - marking a new primary clears the previous one (transaction)     */
+/*   - unsetting the current primary is rejected (400)                 */
+/*   - deleting the primary auto-promotes the oldest remaining         */
+/* ------------------------------------------------------------------ */
+async function listProteins(req, res, next) {
+  try {
+    const [rows] = await db.query(
+      `SELECT id, restaurant_id, name, price, is_primary, created_at
+       FROM proteins
+       WHERE restaurant_id = ?
+       ORDER BY is_primary DESC, name`,
+      [req.restaurant.id]
+    );
+    return res.json({ proteins: rows });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function createProtein(req, res, next) {
+  try {
+    const name = String(req.body.name || '').trim();
+    const price = Number(req.body.price);
+    let isPrimary = req.body.is_primary === true || req.body.is_primary === 'true';
+
+    if (!name) {
+      return res.status(422).json({ error: 'Protein name is required.' });
+    }
+    if (!Number.isFinite(price) || price < 0) {
+      return res.status(422).json({ error: 'Protein price must be a positive number.' });
+    }
+
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+      const [[countRow]] = await conn.query(
+        'SELECT COUNT(*) AS n FROM proteins WHERE restaurant_id = ?',
+        [req.restaurant.id]
+      );
+      if (countRow.n === 0) isPrimary = true; // the very first protein is the primary
+      if (isPrimary) {
+        await conn.query('UPDATE proteins SET is_primary = 0 WHERE restaurant_id = ?', [req.restaurant.id]);
+      }
+      const [result] = await conn.query(
+        'INSERT INTO proteins (restaurant_id, name, price, is_primary) VALUES (?, ?, ?, ?)',
+        [req.restaurant.id, name, price, isPrimary ? 1 : 0]
+      );
+      await conn.commit();
+      conn.release();
+      const [rows] = await db.query('SELECT * FROM proteins WHERE id = ?', [result.insertId]);
+      return res.status(201).json({ message: 'Protein added.', protein: rows[0] });
+    } catch (err) {
+      await conn.rollback();
+      conn.release();
+      throw err;
+    }
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'This protein is already on your list.' });
+    }
+    return next(err);
+  }
+}
+
+async function updateProtein(req, res, next) {
+  try {
+    const { name, price, is_primary } = req.body;
+    if (name !== undefined && !String(name).trim()) {
+      return res.status(422).json({ error: 'Protein name cannot be empty.' });
+    }
+    if (price !== undefined && (!Number.isFinite(Number(price)) || Number(price) < 0)) {
+      return res.status(422).json({ error: 'Protein price must be a positive number.' });
+    }
+
+    const sets = [];
+    const params = [];
+    if (name !== undefined) { sets.push('name = ?'); params.push(String(name).trim()); }
+    if (price !== undefined) { sets.push('price = ?'); params.push(Number(price)); }
+
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+      const [[row]] = await conn.query(
+        'SELECT id, restaurant_id, is_primary FROM proteins WHERE id = ? FOR UPDATE',
+        [req.protein.id]
+      );
+
+      const wantPrimary = is_primary === true || is_primary === 'true';
+      if (wantPrimary) {
+        // New primary: clear the old one first.
+        await conn.query('UPDATE proteins SET is_primary = 0 WHERE restaurant_id = ?', [row.restaurant_id]);
+        sets.push('is_primary = 1');
+      } else if (is_primary !== undefined && row.is_primary === 1) {
+        // Trying to UNSET the current primary — the invariant requires exactly one.
+        await conn.rollback();
+        conn.release();
+        return res.status(400).json({
+          error: 'You must keep a primary protein. Mark another protein as primary instead — it will replace this one.',
+        });
+      }
+
+      if (sets.length === 0) {
+        await conn.rollback();
+        conn.release();
+        return res.status(422).json({ error: 'Nothing to update.' });
+      }
+
+      await conn.query(`UPDATE proteins SET ${sets.join(', ')} WHERE id = ?`, [...params, row.id]);
+      await conn.commit();
+      conn.release();
+    } catch (err) {
+      await conn.rollback();
+      conn.release();
+      throw err;
+    }
+
+    const [rows] = await db.query('SELECT * FROM proteins WHERE id = ?', [req.protein.id]);
+    return res.json({ message: 'Protein updated.', protein: rows[0] });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'This protein is already on your list.' });
+    }
+    return next(err);
+  }
+}
+
+async function deleteProtein(req, res, next) {
+  try {
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+      const [[row]] = await conn.query(
+        'SELECT id, restaurant_id, is_primary FROM proteins WHERE id = ? FOR UPDATE',
+        [req.protein.id]
+      );
+      // Deleting the primary auto-promotes the oldest remaining protein.
+      if (row.is_primary === 1) {
+        const [[nextP]] = await conn.query(
+          'SELECT id FROM proteins WHERE restaurant_id = ? AND id <> ? ORDER BY id LIMIT 1',
+          [row.restaurant_id, row.id]
+        );
+        if (nextP) {
+          await conn.query('UPDATE proteins SET is_primary = 1 WHERE id = ?', [nextP.id]);
+        }
+      }
+      await conn.query('DELETE FROM proteins WHERE id = ?', [row.id]);
+      await conn.commit();
+      conn.release();
+    } catch (err) {
+      await conn.rollback();
+      conn.release();
+      throw err;
+    }
+    return res.json({ message: 'Protein removed.', protein: { id: req.protein.id } });
+  } catch (err) {
+    // FK violation (menu_item_proteins CASCADE, order_item_proteins RESTRICT)
+    if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
+      return res.status(409).json({
+        error: 'This protein is used by past orders and cannot be removed.',
+      });
+    }
+    return next(err);
+  }
+}
+
+module.exports = {
+  listRestaurants,
+  getRestaurant,
+  createRestaurant,
+  updateRestaurant,
+  softDeleteRestaurant,
+  getMyRestaurants,
+  listFoods,
+  createFood,
+  deleteFood,
+  listProteins,
+  createProtein,
+  updateProtein,
+  deleteProtein,
+};

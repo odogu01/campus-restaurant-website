@@ -31,6 +31,10 @@ const placeOrderRules = [
   body('items').isArray({ min: 1 }).withMessage('items must be a non-empty array'),
   body('items.*.menuItemId').isInt({ min: 1 }).withMessage('each item needs a valid menuItemId'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('each item needs a quantity of at least 1'),
+  // Optional protein selections per item: [{ proteinId, quantity }].
+  body('items.*.proteins').optional().isArray().withMessage('proteins must be an array'),
+  body('items.*.proteins.*.proteinId').isInt({ min: 1 }).withMessage('each protein needs a valid proteinId'),
+  body('items.*.proteins.*.quantity').isInt({ min: 1 }).withMessage('each protein needs a quantity of at least 1'),
   body('orderType').isIn(['pickup', 'delivery']).withMessage("orderType must be 'pickup' or 'delivery'"),
   body('deliveryAddress').optional({ values: 'falsy' }).isLength({ max: 255 }).withMessage('deliveryAddress too long'),
   body('specialInstructions').optional({ values: 'falsy' }).isLength({ max: 2000 }).withMessage('specialInstructions too long'),

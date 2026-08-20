@@ -78,18 +78,29 @@
             <p class="font-extrabold text-slate-800">${cart.restaurantName}</p>
           </div>
           ${cart.items.map((i) => `
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-4 animate-scaleIn">
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-start gap-4 animate-scaleIn">
               <div class="flex-1 min-w-0">
                 <p class="font-bold text-slate-800">${i.name}</p>
                 <p class="text-sm text-slate-500">${CampusBites.formatMoney(i.price)} each</p>
+                ${(i.proteins && i.proteins.length ? i.proteins : []).map((p) => `
+                  <div class="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 mt-2 gap-2">
+                    <span class="text-xs font-semibold text-slate-600 min-w-0">${p.name} <span class="text-amber-600 font-bold">${CampusBites.formatMoney(p.price)}</span></span>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <button data-id="${i.menuItemId}" data-pid="${p.proteinId}" data-delta="-1" class="p-qty-btn w-6 h-6 rounded-md bg-white border border-slate-200 font-bold text-slate-600 hover:border-amber-400 transition-colors">−</button>
+                      <span class="w-6 text-center text-xs font-bold">${p.qty}</span>
+                      <button data-id="${i.menuItemId}" data-pid="${p.proteinId}" data-delta="1" class="p-qty-btn w-6 h-6 rounded-md bg-white border border-slate-200 font-bold text-slate-600 hover:border-amber-400 transition-colors">+</button>
+                    </div>
+                    <span class="text-xs font-bold text-slate-700 w-16 text-right shrink-0">${CampusBites.formatMoney(p.qty * p.price)}</span>
+                  </div>
+                `).join('')}
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 shrink-0">
                 <button data-id="${i.menuItemId}" data-delta="-1" class="qty-btn w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 transition-colors">−</button>
                 <span class="w-8 text-center font-bold">${i.qty}</span>
                 <button data-id="${i.menuItemId}" data-delta="1" class="qty-btn w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 transition-colors">+</button>
               </div>
-              <div class="w-20 text-right">
-                <p class="font-extrabold text-amber-600">${CampusBites.formatMoney(i.price * i.qty)}</p>
+              <div class="w-24 text-right shrink-0">
+                <p class="font-extrabold text-amber-600">${CampusBites.formatMoney(CampusBites.cart.getItemTotal(i))}</p>
                 <button data-id="${i.menuItemId}" class="remove-btn text-xs text-slate-400 hover:text-red-600 transition-colors mt-1">Remove</button>
               </div>
             </div>
@@ -104,6 +115,19 @@
             const item = cart.items.find((x) => x.menuItemId === Number(btn.dataset.id));
             if (!item) return;
             CampusBites.cart.setQuantity(item.menuItemId, item.qty + Number(btn.dataset.delta));
+            render();
+            CampusBites.updateCartBadge();
+          });
+        });
+
+        // Protein quantity steppers (going to 0 removes the protein).
+        itemsEl.querySelectorAll('.p-qty-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const item = cart.items.find((x) => x.menuItemId === Number(btn.dataset.id));
+            if (!item) return;
+            const p = (item.proteins || []).find((x) => x.proteinId === Number(btn.dataset.pid));
+            if (!p) return;
+            CampusBites.cart.setProteinQuantity(item.menuItemId, p.proteinId, p.qty + Number(btn.dataset.delta));
             render();
             CampusBites.updateCartBadge();
           });

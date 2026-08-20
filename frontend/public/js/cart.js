@@ -1,8 +1,11 @@
 /**
  * cart.js — localStorage shopping cart.
  *
- * Cart shape: { restaurantId, restaurantName, items: [{ menuItemId, name, price, qty }] }
- * Phase 8 builds cart.html rendering + checkout on top of this.
+ * Cart shape:
+ * { restaurantId, restaurantName, items: [{
+ *     menuItemId, name, price, qty,
+ *     proteins: [{ proteinId, name, price, qty }]
+ *   }] }
  */
 (function () {
   const KEY = 'campus_bites_cart';
@@ -17,7 +20,9 @@
 
   /**
    * Add an item. Items from a different restaurant start a new cart.
-   * @param {{menuItemId:number, name:string, price:number, restaurantId:number, restaurantName:string}} item
+   * Protein selections merge into an existing line (same menuItemId):
+   * repeated proteins add their quantities together.
+   * @param {{menuItemId:number, name:string, price:number, restaurantId:number, restaurantName:string, proteins?:Array<{proteinId:number, name:string, price:number, qty:number}>}} item
    */
   function addToCart(item) {
     let cart = loadCart();
@@ -26,9 +31,26 @@
       cart = { restaurantId: item.restaurantId, restaurantName: item.restaurantName, items: [] };
     }
 
+    const proteins = (item.proteins || []).filter((p) => p.qty > 0);
+
     const found = cart.items.find((i) => i.menuItemId === item.menuItemId);
-    if (found) found.qty += 1;
-    else cart.items.push({ menuItemId: item.menuItemId, name: item.name, price: item.price, qty: 1 });
+    if (found) {
+      found.qty += 1;
+      found.proteins = found.proteins || [];
+      proteins.forEach((np) => {
+        const existing = found.proteins.find((p) => p.proteinId === np.proteinId);
+        if (existing) existing.qty += np.qty;
+        else found.proteins.push({ proteinId: np.proteinId, name: np.name, price: np.price, qty: np.qty });
+      });
+    } else {
+      cart.items.push({
+        menuItemId: item.menuItemId,
+        name: item.name,
+        price: item.price,
+        qty: 1,
+        proteins: proteins.map((p) => ({ ...p })),
+      });
+    }
 
     saveCart(cart);
     return cart;
@@ -57,6 +79,31 @@
     return cart;
   }
 
+  /**
+   * Set a protein's quantity on a cart line.
+   * qty <= 0 removes the protein from the line.
+   */
+  function setProteinQuantity(menuItemId, proteinId, qty) {
+    const cart = loadCart();
+    if (!cart) return null;
+    const item = cart.items.find((i) => i.menuItemId === menuItemId);
+    if (!item) return cart;
+    item.proteins = item.proteins || [];
+    const found = item.proteins.find((p) => p.proteinId === proteinId);
+    if (!found) return cart;
+    if (qty <= 0) item.proteins = item.proteins.filter((p) => p.proteinId !== proteinId);
+    else found.qty = qty;
+    saveCart(cart);
+    return cart;
+  }
+
+  /** Total for one line: food + protein additions. */
+  function getItemTotal(item) {
+    const food = item.qty * item.price;
+    const proteins = (item.proteins || []).reduce((s, p) => s + p.qty * p.price, 0);
+    return food + proteins;
+  }
+
   function getCart() {
     return loadCart();
   }
@@ -73,7 +120,7 @@
 
   function getCartTotal() {
     const cart = loadCart();
-    return cart ? cart.items.reduce((s, i) => s + i.qty * i.price, 0) : 0;
+    return cart ? cart.items.reduce((s, i) => s + getItemTotal(i), 0) : 0;
   }
 
   function clearCart() {
@@ -84,6 +131,8 @@
     addToCart,
     removeFromCart,
     setQuantity,
+    setProteinQuantity,
+    getItemTotal,
     getCart,
     getCartItems,
     getCartCount,

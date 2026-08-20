@@ -8,8 +8,16 @@
  *   DELETE /api/restaurants/:id                 — owner/admin (soft)
  *   GET    /api/vendor/restaurants              — vendor (own list)
  *
+ *   GET    /api/restaurants/:id/foods           — owner/admin (foods list)
+ *   POST   /api/restaurants/:id/foods           — owner/admin { name }
+ *   DELETE /api/foods/:id                       — owner/admin
+ *   GET    /api/restaurants/:id/proteins        — owner/admin (proteins list)
+ *   POST   /api/restaurants/:id/proteins        — owner/admin { name, price, is_primary? }
+ *   PUT    /api/proteins/:id                    — owner/admin { name?, price?, is_primary? }
+ *   DELETE /api/proteins/:id                    — owner/admin
+ *
  *   GET    /api/restaurants/:restaurantId/menu  — public
- *   POST   /api/restaurants/:restaurantId/menu  — owner/admin
+ *   POST   /api/restaurants/:restaurantId/menu  — owner/admin (food_id + images + protein_ids[])
  *   PUT    /api/menu/:itemId                    — owner/admin
  *   DELETE /api/menu/:itemId                    — owner/admin
  */
@@ -23,6 +31,13 @@ const {
   updateRestaurant,
   softDeleteRestaurant,
   getMyRestaurants,
+  listFoods,
+  createFood,
+  deleteFood,
+  listProteins,
+  createProtein,
+  updateProtein,
+  deleteProtein,
 } = require('../controllers/restaurantController');
 
 const {
@@ -34,7 +49,7 @@ const {
 } = require('../controllers/menuController');
 
 const { protect, optionalAuth } = require('../middleware/auth');
-const { requireRestaurantOwner, requireItemRestaurantOwner } = require('../middleware/ownership');
+const { requireRestaurantOwner, requireItemRestaurantOwner, requireFoodOwner, requireProteinOwner } = require('../middleware/ownership');
 const { validate } = require('../middleware/validate');
 const { upload } = require('../config/uploads');
 
@@ -49,10 +64,18 @@ const restaurantRules = [
   body('logo_url').optional({ values: 'falsy' }).trim().isURL().withMessage('logo_url must be a valid URL').isLength({ max: 500 }),
 ];
 
+const foodRules = [
+  body('name').trim().notEmpty().withMessage('Food name is required').isLength({ max: 100 }),
+];
+
+const proteinRules = [
+  body('name').trim().notEmpty().withMessage('Protein name is required').isLength({ max: 100 }),
+  body('price').isFloat({ min: 0 }).withMessage('Protein price must be a positive number'),
+  body('is_primary').optional({ values: 'falsy' }).isBoolean().withMessage('is_primary must be true or false'),
+];
+
 const menuItemRules = [
-  body('name').trim().notEmpty().withMessage('Item name is required').isLength({ max: 150 }),
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
-  body('category').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
   body('is_available').optional({ values: 'falsy' }).isBoolean().withMessage('is_available must be true or false'),
 ];
 
@@ -70,6 +93,16 @@ router.post('/restaurants', protect, restaurantRules, validate, createRestaurant
 router.put('/restaurants/:id', protect, [idParam('id')], restaurantRules, validate, requireRestaurantOwner, updateRestaurant);
 router.delete('/restaurants/:id', protect, [idParam('id')], validate, requireRestaurantOwner, softDeleteRestaurant);
 router.get('/vendor/restaurants', protect, getMyRestaurants);
+
+/* ---- Foods & Proteins (owner/admin) ---- */
+router.get('/restaurants/:id/foods', protect, [idParam('id')], validate, requireRestaurantOwner, listFoods);
+router.post('/restaurants/:id/foods', protect, [idParam('id')], foodRules, validate, requireRestaurantOwner, createFood);
+router.delete('/foods/:id', protect, [idParam('id')], validate, requireFoodOwner, deleteFood);
+
+router.get('/restaurants/:id/proteins', protect, [idParam('id')], validate, requireRestaurantOwner, listProteins);
+router.post('/restaurants/:id/proteins', protect, [idParam('id')], proteinRules, validate, requireRestaurantOwner, createProtein);
+router.put('/proteins/:id', protect, [idParam('id')], validate, requireProteinOwner, updateProtein);
+router.delete('/proteins/:id', protect, [idParam('id')], validate, requireProteinOwner, deleteProtein);
 
 /* ---- Menu routes ---- */
 router.get('/restaurants/:restaurantId/menu', [idParam('restaurantId')], validate, listMenuItems);

@@ -270,7 +270,10 @@
           </div>
         </div>
         <div class="mt-3 text-sm text-slate-600">
-          ${(o.items || []).map((i) => `<span class="inline-block mr-4">${i.quantity} × ${i.item_name || 'Item'}</span>`).join('')}
+          ${(o.items || []).map((i) => `
+              <span class="inline-block mr-4">${i.quantity} × ${i.item_name || 'Item'}
+                ${(i.proteins || []).map((p) => `<span class="text-xs text-slate-400"> · ${p.quantity}× ${p.name}</span>`).join('')}
+              </span>`).join('')}
         </div>
         <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
           <span class="text-xs text-slate-400">${o.order_type}${o.delivery_address ? ' → ' + o.delivery_address : ''}</span>

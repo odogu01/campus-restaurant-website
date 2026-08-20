@@ -53,28 +53,81 @@ CREATE TABLE IF NOT EXISTS restaurants (
 ) ENGINE = InnoDB;
 
 -- ------------------------------------------------------------
--- 3. menu_items
--- Items belong to exactly one restaurant.
+-- 3. foods
+-- The foods a restaurant sells (set up by the vendor when editing
+-- the restaurant). Menu item names are picked from this list.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS foods (
+  id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  restaurant_id BIGINT UNSIGNED NOT NULL,
+  name          VARCHAR(100)  NOT NULL,
+  created_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_foods_restaurant FOREIGN KEY (restaurant_id)
+    REFERENCES restaurants (id) ON DELETE CASCADE,
+  UNIQUE KEY uq_foods_restaurant_name (restaurant_id, name),
+  INDEX idx_foods_restaurant (restaurant_id)
+) ENGINE = InnoDB;
+
+-- ------------------------------------------------------------
+-- 3a. proteins
+-- Proteins a restaurant sells (e.g. goat meat, beef, chicken),
+-- each with its own price. EXACTLY ONE protein is the PRIMARY
+-- protein per restaurant (the default customers get on items).
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS proteins (
+  id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  restaurant_id BIGINT UNSIGNED NOT NULL,
+  name          VARCHAR(100)  NOT NULL,
+  price         DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+  is_primary    TINYINT(1)    NOT NULL DEFAULT 0,     -- exactly one per restaurant
+  created_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_proteins_restaurant FOREIGN KEY (restaurant_id)
+    REFERENCES restaurants (id) ON DELETE CASCADE,
+  UNIQUE KEY uq_proteins_restaurant_name (restaurant_id, name),
+  INDEX idx_proteins_restaurant (restaurant_id)
+) ENGINE = InnoDB;
+
+-- ------------------------------------------------------------
+-- 3b. menu_items
+-- Items belong to exactly one restaurant and reference a FOOD from
+-- the restaurant's foods list (name is denormalized from the food).
+-- There is NO category anymore (removed by product decision).
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS menu_items (
   id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   restaurant_id BIGINT UNSIGNED NOT NULL,
-  name          VARCHAR(150)  NOT NULL,
+  food_id       BIGINT UNSIGNED NOT NULL,             -- the food this item sells
+  name          VARCHAR(150)  NOT NULL,               -- snapshot of foods.name
   description   TEXT,
-  price         DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  category      VARCHAR(50)   DEFAULT NULL,           -- e.g. 'Main', 'Drinks', 'Dessert'
+  price         DECIMAL(10, 2) NOT NULL DEFAULT 0.00, -- base price (proteins are extra)
   image_url     VARCHAR(500)  DEFAULT NULL,
   is_available  TINYINT(1)    NOT NULL DEFAULT 1,
   created_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_menu_items_restaurant FOREIGN KEY (restaurant_id)
     REFERENCES restaurants (id) ON DELETE CASCADE,
+  CONSTRAINT fk_menu_items_food FOREIGN KEY (food_id)
+    REFERENCES foods (id) ON DELETE RESTRICT,
   INDEX idx_menu_items_restaurant (restaurant_id),
-  INDEX idx_menu_items_category (category),
+  INDEX idx_menu_items_food (food_id),
   INDEX idx_menu_items_available (is_available)
 ) ENGINE = InnoDB;
 
 -- ------------------------------------------------------------
--- 3b. menu_item_images
+-- 3c. menu_item_proteins
+-- Which proteins are AVAILABLE with a menu item.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS menu_item_proteins (
+  menu_item_id  BIGINT UNSIGNED NOT NULL,
+  protein_id    BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (menu_item_id, protein_id),
+  CONSTRAINT fk_mip_menu_item FOREIGN KEY (menu_item_id)
+    REFERENCES menu_items (id) ON DELETE CASCADE,
+  CONSTRAINT fk_mip_protein FOREIGN KEY (protein_id)
+    REFERENCES proteins (id) ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+-- ------------------------------------------------------------
+-- 3d. menu_item_images
 -- STRICT RULE: every menu item must have AT LEAST 2 images.
 -- Images live here (1-N) so items can carry multiple photos;
 -- menu_items.image_url mirrors the first image (position 0).
@@ -140,6 +193,26 @@ CREATE TABLE IF NOT EXISTS order_items (
     REFERENCES menu_items (id) ON DELETE RESTRICT,
   INDEX idx_order_items_order (order_id),
   INDEX idx_order_items_menu_item (menu_item_id)
+) ENGINE = InnoDB;
+
+-- ------------------------------------------------------------
+-- 5b. order_item_proteins
+-- Protein selections per order line (snapshotted name + price so
+-- order history is stable even if the vendor changes prices later).
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS order_item_proteins (
+  id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  order_item_id BIGINT UNSIGNED NOT NULL,
+  protein_id    BIGINT UNSIGNED NOT NULL,
+  protein_name  VARCHAR(100)  NOT NULL,               -- snapshot at order time
+  quantity      INT UNSIGNED NOT NULL DEFAULT 1,
+  unit_price    DECIMAL(10, 2) NOT NULL DEFAULT 0.00, -- snapshot at order time
+  subtotal      DECIMAL(10, 2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
+  CONSTRAINT fk_oip_order_item FOREIGN KEY (order_item_id)
+    REFERENCES order_items (id) ON DELETE CASCADE,
+  CONSTRAINT fk_oip_protein FOREIGN KEY (protein_id)
+    REFERENCES proteins (id) ON DELETE RESTRICT,
+  INDEX idx_oip_order_item (order_item_id)
 ) ENGINE = InnoDB;
 
 -- ------------------------------------------------------------

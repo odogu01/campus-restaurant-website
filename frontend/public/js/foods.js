@@ -2,8 +2,9 @@
  * foods.js — "All foods" page.
  *
  * Shows every available menu item from every active restaurant with
- * search, category chips and a restaurant filter. Each card links back
- * to its restaurant and can be added straight to the cart.
+ * search and a restaurant filter. Each card links back to its restaurant
+ * and can be added straight to the cart (protein picks happen on the
+ * restaurant menu page).
  */
 (function () {
   const CB = window.CampusBites;
@@ -11,7 +12,6 @@
 
   const state = {
     search: '',
-    category: '',
     restaurantId: '',
     items: [],       // last fetched items
     restaurants: [], // for the filter dropdown
@@ -20,28 +20,6 @@
   const grid = document.getElementById('food-grid');
   const skel = document.getElementById('food-skeleton');
   const empty = document.getElementById('food-empty');
-
-  /* ---------- Build the category chips from the fetched items ---------- */
-  function renderCategoryChips() {
-    const wrap = document.getElementById('food-cats');
-    const counts = {};
-    state.items.forEach((i) => {
-      const cat = i.category || 'Other';
-      counts[cat] = (counts[cat] || 0) + 1;
-    });
-    const cats = Object.keys(counts).sort();
-    const chip = (label, value) => `
-      <button data-cat="${value}" class="chip px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-        state.category === value ? 'bg-amber-500 text-white shadow' : 'bg-white text-slate-600 border border-slate-200 hover:border-amber-400'
-      }">${label}</button>`;
-    wrap.innerHTML = [chip('All', ''), ...cats.map((c) => chip(`${c} (${counts[c]})`, c))].join('');
-    wrap.querySelectorAll('.chip').forEach((b) =>
-      b.addEventListener('click', () => {
-        state.category = b.dataset.cat;
-        fetchItems();
-      })
-    );
-  }
 
   /* ---------- Restaurant filter dropdown ---------- */
   async function loadRestaurants() {
@@ -65,14 +43,12 @@
         auth: false,
         query: {
           search: state.search || undefined,
-          category: state.category || undefined,
           restaurantId: state.restaurantId || undefined,
         },
       });
       state.items = data.items;
       skel.classList.add('hidden');
       grid.classList.remove('hidden');
-      renderCategoryChips(); // keep active chip + counts in sync with the results
 
       if (state.items.length === 0) {
         empty.classList.remove('hidden');
@@ -97,8 +73,11 @@
               <p class="font-extrabold text-amber-600 whitespace-nowrap">${CB.formatMoney(item.price)}</p>
             </div>
             ${item.description ? `<p class="text-sm text-slate-500 mt-1.5 line-clamp-2">${item.description}</p>` : ''}
+            ${item.proteins && item.proteins.length
+              ? `<p class="text-xs text-slate-400 mt-1.5">⭐ ${item.proteins.filter((p) => p.is_primary).map((p) => p.name).join(', ') || 'Proteins available'} · pick on the menu page</p>`
+              : ''}
             <div class="flex items-center justify-between mt-3">
-              <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">${item.category || 'Other'}</span>
+              <a href="menu.html?id=${item.restaurant_id}" class="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-bold">Choose proteins →</a>
               <button data-id="${item.id}" data-name="${item.name}" data-price="${item.price}"
                 data-rest="${item.restaurant_id}" data-rest-name="${item.restaurant_name}"
                 class="add-btn relative bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105">

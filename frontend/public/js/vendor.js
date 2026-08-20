@@ -90,7 +90,8 @@
       </div>
       <div id="rest-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="skeleton h-44"></div><div class="skeleton h-44"></div>
-      </div>`;
+      </div>
+      <div id="foods-proteins" class="mt-6"></div>`;
 
     document.getElementById('create-rest-form').addEventListener('submit', createRestaurant);
     await loadRestaurantsList();
@@ -121,8 +122,180 @@
       grid.innerHTML = restaurants.map(renderRestaurantCard).join('');
       grid.querySelectorAll('.rest-edit').forEach((b) => b.addEventListener('click', () => openRestEdit(b.dataset.id)));
       grid.querySelectorAll('.rest-delete').forEach((b) => b.addEventListener('click', () => deactivateRestaurant(b.dataset.id)));
+      await renderFoodsProteins(restaurants[0].id);
     } catch (err) {
       document.getElementById('rest-list').innerHTML = `<p class="text-red-500 text-center py-10">${err.message}</p>`;
+    }
+  }
+
+  /* ================================================================
+   * FOODS & PROTEINS — set up in the My Restaurant tab
+   * ================================================================ */
+  async function renderFoodsProteins(rid) {
+    const host = document.getElementById('foods-proteins');
+    if (!host || !rid) return;
+    host.innerHTML = `
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 animate-slideUp">
+        <h3 class="font-extrabold text-slate-800">🥘 Foods &amp; proteins</h3>
+        <p class="text-xs text-slate-400 mt-0.5 mb-4">Menu items are created from these foods. The <b>primary</b> protein is preselected for customers by default, and protein prices are added on top of the item price.</p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <p class="text-sm font-bold text-slate-700 mb-2">Foods you sell</p>
+            <div id="food-list" class="space-y-1.5 mb-3"></div>
+            <form id="food-add-form" class="flex gap-2">
+              <input id="food-name" placeholder="e.g. Jollof rice" class="flex-1 min-w-0 px-3 py-2 rounded-xl border border-slate-200 focus:border-amber-400 outline-none text-sm" />
+              <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors">Add</button>
+            </form>
+          </div>
+          <div>
+            <p class="text-sm font-bold text-slate-700 mb-2">Proteins (with prices)</p>
+            <div id="protein-list" class="space-y-1.5 mb-3"></div>
+            <form id="protein-add-form" class="flex gap-2 flex-wrap">
+              <input id="protein-name" placeholder="e.g. Goat meat" class="flex-1 min-w-[7rem] px-3 py-2 rounded-xl border border-slate-200 focus:border-amber-400 outline-none text-sm" />
+              <input id="protein-price" type="number" step="0.01" min="0" placeholder="Price ₦" class="w-24 px-3 py-2 rounded-xl border border-slate-200 focus:border-amber-400 outline-none text-sm" />
+              <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                <input id="protein-primary" type="checkbox" class="accent-amber-500 w-4 h-4" /> Primary
+              </label>
+              <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors">Add</button>
+            </form>
+            <p class="text-[0.7rem] text-slate-400 mt-2">⭐ = primary protein (the default customers get). Click a star to change it. Edit a price inline and press Enter.</p>
+          </div>
+        </div>
+      </div>`;
+
+    document.getElementById('food-add-form').addEventListener('submit', (e) => { e.preventDefault(); addFood(rid); });
+    document.getElementById('protein-add-form').addEventListener('submit', (e) => { e.preventDefault(); addProtein(rid); });
+    await Promise.all([loadFoods(rid), loadProteins(rid)]);
+  }
+
+  async function loadFoods(rid) {
+    const el = document.getElementById('food-list');
+    try {
+      const data = await CB.apiGet(`/api/restaurants/${rid}/foods`);
+      if (data.foods.length === 0) {
+        el.innerHTML = '<p class="text-xs text-slate-400">No foods yet — add the foods you sell.</p>';
+        return;
+      }
+      el.innerHTML = data.foods.map((f) => `
+        <div class="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5">
+          <span class="text-sm font-semibold text-slate-700">${f.name}</span>
+          <button data-id="${f.id}" class="food-del text-xs text-slate-400 hover:text-red-600 transition-colors" title="Remove food">✕</button>
+        </div>`).join('');
+      el.querySelectorAll('.food-del').forEach((b) => b.addEventListener('click', () => deleteFood(rid, Number(b.dataset.id))));
+    } catch (err) {
+      el.innerHTML = `<p class="text-xs text-red-500">${err.message}</p>`;
+    }
+  }
+
+  async function addFood(rid) {
+    const input = document.getElementById('food-name');
+    const name = input.value.trim();
+    if (!name) return;
+    try {
+      await CB.apiPost(`/api/restaurants/${rid}/foods`, { name });
+      input.value = '';
+      CB.showToast(`"${name}" added to your foods.`, 'success');
+      await loadFoods(rid);
+    } catch (err) {
+      CB.showToast(err.message, 'error');
+    }
+  }
+
+  async function deleteFood(rid, id) {
+    if (!confirm('Remove this food from your list?')) return;
+    try {
+      await CB.apiDelete(`/api/foods/${id}`);
+      CB.showToast('Food removed.', 'info');
+      await loadFoods(rid);
+    } catch (err) {
+      CB.showToast(err.message, 'error');
+    }
+  }
+
+  async function loadProteins(rid) {
+    const el = document.getElementById('protein-list');
+    try {
+      const data = await CB.apiGet(`/api/restaurants/${rid}/proteins`);
+      if (data.proteins.length === 0) {
+        el.innerHTML = '<p class="text-xs text-slate-400">No proteins yet — add the proteins you sell with their prices.</p>';
+        return;
+      }
+      el.innerHTML = data.proteins.map((p) => `
+        <div class="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 gap-2">
+          <button data-id="${p.id}" class="primary-star text-base ${p.is_primary ? 'text-amber-500' : 'text-slate-300 hover:text-amber-400'} transition-colors" title="${p.is_primary ? 'Primary protein' : 'Set as primary protein'}">★</button>
+          <span class="text-sm font-semibold text-slate-700 flex-1 min-w-0 truncate">${p.name}${p.is_primary ? ' <span class="text-[0.6rem] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full ml-1">DEFAULT</span>' : ''}</span>
+          <input data-id="${p.id}" type="number" step="0.01" min="0" value="${Number(p.price)}" class="price-input w-20 px-2 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:border-amber-400" title="Edit price (Enter to save)" />
+          <button data-id="${p.id}" class="protein-del text-xs text-slate-400 hover:text-red-600 transition-colors" title="Remove protein">✕</button>
+        </div>`).join('');
+      el.querySelectorAll('.primary-star').forEach((b) =>
+        b.addEventListener('click', () => setPrimaryProtein(rid, Number(b.dataset.id)))
+      );
+      el.querySelectorAll('.price-input').forEach((inp) =>
+        inp.addEventListener('change', () => updateProteinPrice(rid, Number(inp.dataset.id), inp))
+      );
+      el.querySelectorAll('.protein-del').forEach((b) =>
+        b.addEventListener('click', () => deleteProtein(rid, Number(b.dataset.id)))
+      );
+    } catch (err) {
+      el.innerHTML = `<p class="text-xs text-red-500">${err.message}</p>`;
+    }
+  }
+
+  async function addProtein(rid) {
+    const name = document.getElementById('protein-name').value.trim();
+    const price = Number(document.getElementById('protein-price').value);
+    const primary = document.getElementById('protein-primary').checked;
+    if (!name || !(price >= 0)) {
+      CB.showToast('Protein name and price are required.', 'error');
+      return;
+    }
+    try {
+      await CB.apiPost(`/api/restaurants/${rid}/proteins`, { name, price, is_primary: primary });
+      document.getElementById('protein-name').value = '';
+      document.getElementById('protein-price').value = '';
+      document.getElementById('protein-primary').checked = false;
+      CB.showToast(`"${name}" added (${CB.formatMoney(price)}).`, 'success');
+      await loadProteins(rid);
+    } catch (err) {
+      CB.showToast(err.message, 'error');
+    }
+  }
+
+  async function setPrimaryProtein(rid, id) {
+    try {
+      await CB.apiPut(`/api/proteins/${id}`, { is_primary: true });
+      CB.showToast('Primary protein updated.', 'success');
+      await loadProteins(rid);
+    } catch (err) {
+      CB.showToast(err.message, 'error');
+    }
+  }
+
+  async function updateProteinPrice(rid, id, inp) {
+    const price = Number(inp.value);
+    if (!(price >= 0)) {
+      CB.showToast('Price must be a positive number.', 'error');
+      await loadProteins(rid);
+      return;
+    }
+    try {
+      await CB.apiPut(`/api/proteins/${id}`, { price });
+      CB.showToast('Protein price updated.', 'success');
+      await loadProteins(rid);
+    } catch (err) {
+      CB.showToast(err.message, 'error');
+      await loadProteins(rid);
+    }
+  }
+
+  async function deleteProtein(rid, id) {
+    if (!confirm('Remove this protein from your list?')) return;
+    try {
+      await CB.apiDelete(`/api/proteins/${id}`);
+      CB.showToast('Protein removed.', 'info');
+      await loadProteins(rid);
+    } catch (err) {
+      CB.showToast(err.message, 'error');
     }
   }
 
@@ -267,7 +440,7 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <h4 class="font-bold text-slate-800">${item.name}</h4>
-              <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">${item.category || 'Other'}</span>
+              <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">${item.proteins && item.proteins.length ? `${item.proteins.length} protein${item.proteins.length > 1 ? 's' : ''}` : 'No proteins'}</span>
             </div>
             ${item.description ? `<p class="text-sm text-slate-500">${item.description}</p>` : ''}
           </div>
@@ -311,12 +484,53 @@
     count.className = 'text-xs mt-1 ' + (total >= 2 ? 'text-emerald-600 font-semibold' : 'text-red-500 font-semibold');
   }
 
-  function openItemModal(item) {
+  async function openItemModal(item) {
+    const rid = selectedRestaurantId || restaurants[0].id;
+
+    // Load the restaurant's foods + proteins for the dropdown/checkboxes.
+    let foods = [];
+    let proteins = [];
+    try {
+      const [f, p] = await Promise.all([
+        CB.apiGet(`/api/restaurants/${rid}/foods`),
+        CB.apiGet(`/api/restaurants/${rid}/proteins`),
+      ]);
+      foods = f.foods;
+      proteins = p.proteins;
+    } catch { /* modal still opens with empty selectors */ }
+
+    const foodSel = document.getElementById('item-food');
+    const proteinBox = document.getElementById('item-proteins');
+
+    if (foods.length === 0) {
+      foodSel.innerHTML = '<option value="">No foods yet…</option>';
+      foodSel.disabled = true;
+      document.getElementById('item-food-hint').classList.remove('hidden');
+    } else {
+      foodSel.disabled = false;
+      document.getElementById('item-food-hint').classList.add('hidden');
+      foodSel.innerHTML = '<option value="">Select a food…</option>' +
+        foods.map((f) => `<option value="${f.id}">${f.name}</option>`).join('');
+    }
+
+    const checkedIds = new Set((item && Array.isArray(item.proteins) ? item.proteins : []).map((p) => p.id));
+    if (proteins.length === 0) {
+      proteinBox.innerHTML = '';
+      document.getElementById('item-proteins-hint').classList.remove('hidden');
+    } else {
+      document.getElementById('item-proteins-hint').classList.add('hidden');
+      proteinBox.innerHTML = proteins.map((p) => `
+        <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+          <input type="checkbox" value="${p.id}" class="protein-check accent-amber-500 w-4 h-4" ${checkedIds.has(p.id) ? 'checked' : ''} />
+          ${p.name} <span class="text-xs font-bold text-amber-600">${CB.formatMoney(p.price)}</span>
+          ${p.is_primary ? '<span class="text-[0.6rem] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">DEFAULT</span>' : ''}
+        </label>`).join('');
+    }
+
     document.getElementById('item-modal-title').textContent = item ? 'Edit menu item' : 'Add menu item';
     document.getElementById('item-id').value = item ? item.id : '';
-    document.getElementById('item-name').value = item ? item.name : '';
+    if (item && item.food_id) foodSel.value = String(item.food_id);
     document.getElementById('item-price').value = item ? item.price : '';
-    document.getElementById('item-category').value = item ? (item.category || '') : '';
     document.getElementById('item-desc').value = item ? (item.description || '') : '';
     document.getElementById('item-available').checked = item ? Boolean(item.is_available) : true;
 
@@ -335,12 +549,16 @@
     const id = document.getElementById('item-id').value;
     const btn = document.getElementById('item-save');
     const rid = selectedRestaurantId || restaurants[0].id;
-    const name = document.getElementById('item-name').value.trim();
+    const foodId = document.getElementById('item-food').value;
     const price = Number(document.getElementById('item-price').value);
     const files = document.getElementById('item-images').files;
 
-    if (!name || !(price >= 0)) {
-      CB.showToast('Name and a valid price are required.', 'error');
+    if (!foodId) {
+      CB.showToast('Select a food for the item (add foods in My Restaurant first).', 'error');
+      return;
+    }
+    if (!(price >= 0)) {
+      CB.showToast('A valid price is required.', 'error');
       return;
     }
     // STRICT: at least 2 photos — either from the existing set (edit,
@@ -356,11 +574,12 @@
     }
 
     const form = new FormData();
-    form.append('name', name);
+    form.append('food_id', foodId);
     form.append('price', String(price));
-    form.append('category', document.getElementById('item-category').value.trim() || '');
     form.append('description', document.getElementById('item-desc').value.trim() || '');
     form.append('is_available', document.getElementById('item-available').checked ? 'true' : 'false');
+    // Repeated protein_ids fields — multer parses them into an array.
+    document.querySelectorAll('#item-proteins .protein-check:checked').forEach((c) => form.append('protein_ids', c.value));
     for (const f of files) form.append('images', f);
 
     btn.disabled = true;
@@ -458,7 +677,10 @@
           </div>
         </div>
         <div class="mt-3 text-sm text-slate-600">
-          ${(o.items || []).map((i) => `<span class="inline-block mr-4">${i.quantity} × ${i.item_name || 'Item'}</span>`).join('')}
+          ${(o.items || []).map((i) => `
+              <span class="inline-block mr-4">${i.quantity} × ${i.item_name || 'Item'}
+                ${(i.proteins || []).map((p) => `<span class="text-xs text-slate-400"> · ${p.quantity}× ${p.name}</span>`).join('')}
+              </span>`).join('')}
         </div>
         <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
           <span class="text-xs text-slate-400">${o.order_type}${o.delivery_address ? ' → ' + o.delivery_address : ''}${o.special_instructions ? ' · 📝 ' + o.special_instructions : ''}</span>

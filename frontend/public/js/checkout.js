@@ -17,7 +17,13 @@
     const current = cart();
     const total = CB.cart.getCartTotal();
     document.getElementById('summary-items').innerHTML = current.items
-      .map((i) => `<div class="flex justify-between text-slate-600"><span>${i.qty} × ${i.name}</span><span>${CB.formatMoney(i.price * i.qty)}</span></div>`)
+      .map((i) => {
+        const proteins = (i.proteins || []).map((p) => `
+          <div class="flex justify-between text-slate-400 text-xs pl-4">
+            <span>↳ ${p.qty} × ${p.name}</span><span>${CB.formatMoney(p.qty * p.price)}</span>
+          </div>`).join('');
+        return `<div class="flex justify-between text-slate-600"><span>${i.qty} × ${i.name}</span><span>${CB.formatMoney(CB.cart.getItemTotal(i))}</span></div>${proteins}`;
+      })
       .join('');
     document.getElementById('summary-total').textContent = CB.formatMoney(total);
     document.getElementById('pay-amount').textContent = total.toFixed(2);
@@ -63,7 +69,11 @@
     try {
       const data = await CB.apiPost('/api/orders', {
         restaurantId: current.restaurantId,
-        items: current.items.map((i) => ({ menuItemId: i.menuItemId, quantity: i.qty })),
+        items: current.items.map((i) => ({
+          menuItemId: i.menuItemId,
+          quantity: i.qty,
+          proteins: (i.proteins || []).map((p) => ({ proteinId: p.proteinId, quantity: p.qty })),
+        })),
         orderType,
         deliveryAddress,
         specialInstructions,

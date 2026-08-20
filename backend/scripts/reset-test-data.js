@@ -25,6 +25,35 @@ const db = require('../src/config/db');
        WHERE u.email = 'customer@test.com'`
     );
 
+    // Foods/proteins model: menu_items.food_id RESTRICTs on foods, so the
+    // children must go first — restaurants owned by test users cascade to
+    // their foods/proteins, which menu_items would block.
+    await conn.query(
+      `DELETE mip FROM menu_item_proteins mip
+       JOIN menu_items mi ON mi.id = mip.menu_item_id
+       JOIN restaurants r ON r.id = mi.restaurant_id
+       JOIN users u ON u.id = r.owner_id
+       WHERE u.email LIKE '%_test.com' OR u.email LIKE 'grill_%' OR u.email LIKE 'cafe_%' OR u.email LIKE 'smoke_%'`
+    );
+    await conn.query(
+      `DELETE mi FROM menu_items mi
+       JOIN restaurants r ON r.id = mi.restaurant_id
+       JOIN users u ON u.id = r.owner_id
+       WHERE u.email LIKE '%_test.com' OR u.email LIKE 'grill_%' OR u.email LIKE 'cafe_%' OR u.email LIKE 'smoke_%'`
+    );
+    await conn.query(
+      `DELETE f FROM foods f
+       JOIN restaurants r ON r.id = f.restaurant_id
+       JOIN users u ON u.id = r.owner_id
+       WHERE u.email LIKE '%_test.com' OR u.email LIKE 'grill_%' OR u.email LIKE 'cafe_%' OR u.email LIKE 'smoke_%'`
+    );
+    await conn.query(
+      `DELETE p FROM proteins p
+       JOIN restaurants r ON r.id = p.restaurant_id
+       JOIN users u ON u.id = r.owner_id
+       WHERE u.email LIKE '%_test.com' OR u.email LIKE 'grill_%' OR u.email LIKE 'cafe_%' OR u.email LIKE 'smoke_%'`
+    );
+
     const [del] = await conn.query(
       `DELETE FROM users
        WHERE email LIKE '%_test.com'

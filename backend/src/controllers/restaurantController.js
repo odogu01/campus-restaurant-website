@@ -7,11 +7,27 @@
  */
 const db = require('../config/db');
 const { attachImages, attachProteins } = require('./menuController');
+const { publicUrl, cleanupFiles } = require('../config/uploads');
+
+/* ------------------------------------------------------------------ */
+/* Helper: check if a restaurant is currently open based on hours.     */
+/* If hours are not set, assume open.                                  */
+/* ------------------------------------------------------------------ */
+function isRestaurantOpen(restaurant) {
+  if (!restaurant.opening_time || !restaurant.closing_time) return true;
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const open = restaurant.opening_time.split(':').reduce((h, m) => h * 60 + +m);
+  const close = restaurant.closing_time.split(':').reduce((h, m) => h * 60 + +m);
+  if (open < close) return currentMinutes >= open && currentMinutes < close;
+  // overnight (e.g. 22:00-02:00)
+  return currentMinutes >= open || currentMinutes < close;
+}
 
 /* ------------------------------------------------------------------ */
 /* GET /api/restaurants  (public)                                      */
 /* Query: ?cuisine=Italian  ?search=grill                             */
-/* Returns minimal fields + available menu item count.                 */
+/* Returns minimal fields + available menu item count + is_open.       */
 /* ------------------------------------------------------------------ */
 async function listRestaurants(req, res, next) {
   try {
@@ -21,7 +37,7 @@ async function listRestaurants(req, res, next) {
     const params = [];
     let sql = `
       SELECT r.id, r.name, r.description, r.cuisine_type, r.address, r.phone,
-             r.logo_url, r.created_at,
+             r.logo_url, r.opening_time, r.closing_time, r.created_at,
              (SELECT COUNT(*) FROM menu_items mi
               WHERE mi.restaurant_id = r.id AND mi.is_available = 1) AS menu_items_count
       FROM restaurants r
@@ -41,7 +57,9 @@ async function listRestaurants(req, res, next) {
     sql += ' ORDER BY r.created_at DESC';
 
     const [rows] = await db.query(sql, params);
-    return res.json({ restaurants: rows });
+    // Compute is_open for each restaurant
+    const withOpen = rows.map((r) => ({ ...r, is_open: isRestaurantOpen(r) }));
+    return res.json({ restaurants: withOpen });
   } catch (err) {
     return next(err);
   }
@@ -88,8 +106,18 @@ async function getRestaurant(req, res, next) {
       [id]
     );
 
+    // Fetch restaurant images
+    const [images] = await db.query(
+      `SELECT id, image_url, is_cover, position
+       FROM restaurant_images
+       WHERE restaurant_id = ?
+       ORDER BY is_cover DESC, position, id`,
+      [id]
+    );
+
     const withImages = await attachImages(menu);
-    return res.json({ restaurant, menu: await attachProteins(withImages) });
+    const responseRestaurant = { ...restaurant, is_open: isRestaurantOpen(restaurant), images };
+    return res.json({ restaurant: responseRestaurant, menu: await attachProteins(withImages) });
   } catch (err) {
     return next(err);
   }
@@ -97,7 +125,8 @@ async function getRestaurant(req, res, next) {
 
 /* ------------------------------------------------------------------ */
 /* POST /api/restaurants  (vendor/admin)                               */
-/* Body: name (req), description, cuisine_type, address, phone, logo_url */
+/* Body: name (req), description, cuisine_type, address, phone,        */
+/*       logo_url, opening_time, closing_time                          */
 /* ------------------------------------------------------------------ */
 async function createRestaurant(req, res, next) {
   try {
@@ -106,7 +135,16 @@ async function createRestaurant(req, res, next) {
       return res.status(403).json({ error: 'Only restaurant owners can create restaurants.' });
     }
 
-    const { name, description = null, cuisine_type = null, address = null, phone = null, logo_url = null } = req.body;
+    const {
+      name,
+      description = null,
+      cuisine_type = null,
+      address = null,
+      phone = null,
+      logo_url = null,
+      opening_time = null,
+      closing_time = null,
+    } = req.body;
 
     // STRICT RULE: a vendor may own exactly ONE restaurant.
     // Enforced here (friendly message) AND at the DB layer (UNIQUE on
@@ -124,9 +162,9 @@ async function createRestaurant(req, res, next) {
     }
 
     const [result] = await db.query(
-      `INSERT INTO restaurants (owner_id, name, description, cuisine_type, address, phone, logo_url, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
-      [req.user.id, name, description, cuisine_type, address, phone, logo_url]
+      `INSERT INTO restaurants (owner_id, name, description, cuisine_type, address, phone, logo_url, opening_time, closing_time, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+      [req.user.id, name, description, cuisine_type, address, phone, logo_url, opening_time, closing_time]
     );
 
     const [rows] = await db.query('SELECT * FROM restaurants WHERE id = ?', [result.insertId]);
@@ -147,13 +185,22 @@ async function createRestaurant(req, res, next) {
 /* ------------------------------------------------------------------ */
 async function updateRestaurant(req, res, next) {
   try {
-    const { name, description, cuisine_type, address, phone, logo_url } = req.body;
+    const {
+      name,
+      description,
+      cuisine_type,
+      address,
+      phone,
+      logo_url,
+      opening_time,
+      closing_time,
+    } = req.body;
 
     await db.query(
       `UPDATE restaurants
-       SET name = ?, description = ?, cuisine_type = ?, address = ?, phone = ?, logo_url = ?
+       SET name = ?, description = ?, cuisine_type = ?, address = ?, phone = ?, logo_url = ?, opening_time = ?, closing_time = ?
        WHERE id = ?`,
-      [name, description, cuisine_type, address, phone, logo_url, req.restaurant.id]
+      [name, description, cuisine_type, address, phone, logo_url, opening_time, closing_time, req.restaurant.id]
     );
 
     const [rows] = await db.query('SELECT * FROM restaurants WHERE id = ?', [req.restaurant.id]);
@@ -425,6 +472,86 @@ async function deleteProtein(req, res, next) {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* RESTAURANT IMAGES — owner/admin                                     */
+/*   POST   /api/restaurants/:id/images  (multipart, images[])         */
+/*   DELETE /api/restaurant-images/:id                               */
+/*   PUT    /api/restaurant-images/:id  { is_cover? }                 */
+/* ------------------------------------------------------------------ */
+async function uploadRestaurantImages(req, res, next) {
+  try {
+    const files = req.files || [];
+    if (files.length === 0) {
+      return res.status(422).json({ error: 'At least one image is required.' });
+    }
+
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      // Get current max position
+      const [[posRow]] = await conn.query(
+        'SELECT COALESCE(MAX(position), 0) AS max_pos FROM restaurant_images WHERE restaurant_id = ?',
+        [req.restaurant.id]
+      );
+      let position = posRow.max_pos;
+
+      for (let i = 0; i < files.length; i++) {
+        position += 1;
+        const isCover = position === 1 ? 1 : 0; // first image becomes cover
+        await conn.query(
+          `INSERT INTO restaurant_images (restaurant_id, image_url, is_cover, position)
+           VALUES (?, ?, ?, ?)`,
+          [req.restaurant.id, publicUrl(files[i]), isCover, position]
+        );
+      }
+
+      await conn.commit();
+      conn.release();
+    } catch (err) {
+      await conn.rollback();
+      conn.release();
+      cleanupFiles(files);
+      throw err;
+    }
+
+    const [images] = await db.query(
+      `SELECT id, image_url, is_cover, position
+       FROM restaurant_images
+       WHERE restaurant_id = ?
+       ORDER BY is_cover DESC, position, id`,
+      [req.restaurant.id]
+    );
+    return res.status(201).json({ message: 'Images uploaded.', images });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function deleteRestaurantImage(req, res, next) {
+  try {
+    await db.query('DELETE FROM restaurant_images WHERE id = ?', [req.params.imageId]);
+    return res.json({ message: 'Image deleted.' });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function updateRestaurantImage(req, res, next) {
+  try {
+    const { is_cover } = req.body;
+    if (is_cover === true || is_cover === 'true') {
+      // If setting a new cover, clear the old one first
+      await db.query('UPDATE restaurant_images SET is_cover = 0 WHERE restaurant_id = ?', [req.restaurant.id]);
+      await db.query('UPDATE restaurant_images SET is_cover = 1 WHERE id = ?', [req.params.imageId]);
+    }
+    const [rows] = await db.query('SELECT * FROM restaurant_images WHERE id = ?', [req.params.imageId]);
+    return res.json({ message: 'Image updated.', image: rows[0] });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   listRestaurants,
   getRestaurant,
@@ -439,4 +566,7 @@ module.exports = {
   createProtein,
   updateProtein,
   deleteProtein,
+  uploadRestaurantImages,
+  deleteRestaurantImage,
+  updateRestaurantImage,
 };

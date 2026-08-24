@@ -300,12 +300,18 @@
   }
 
   function renderRestaurantCard(r) {
+    const openStatus = r.is_open === false
+      ? '<span class="badge badge-cancelled">Closed</span>'
+      : r.opening_time || r.closing_time
+        ? `<span class="badge badge-delivered">Open ${r.opening_time || ''}–${r.closing_time || ''}</span>`
+        : '<span class="badge badge-confirmed">Always open</span>';
     return `
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 animate-slideUp ${r.is_active ? '' : 'opacity-60'}" data-rest-id="${r.id}">
         <div class="flex items-start justify-between gap-2">
           <div>
             <h3 class="font-extrabold text-slate-800">${r.name}</h3>
             <p class="text-sm text-slate-500">${r.cuisine_type || 'No cuisine set'} · ${r.menu_items_count} items available</p>
+            <p class="text-xs text-slate-400 mt-0.5">${openStatus}</p>
           </div>
           <span class="badge ${r.is_active ? 'badge-delivered' : 'badge-cancelled'}">${r.is_active ? 'active' : 'inactive'}</span>
         </div>
@@ -352,6 +358,10 @@
     document.getElementById('rest-phone').value = r.phone || '';
     document.getElementById('rest-address').value = r.address || '';
     document.getElementById('rest-logo').value = r.logo_url || '';
+    document.getElementById('rest-opening').value = r.opening_time || '';
+    document.getElementById('rest-closing').value = r.closing_time || '';
+    // Load existing restaurant images
+    renderRestImagePreviews(r.images || []);
     document.getElementById('rest-modal').classList.remove('hidden');
   }
 
@@ -361,6 +371,7 @@
     const btn = document.getElementById('rest-save');
     btn.disabled = true;
     try {
+      // First update restaurant basic info + hours
       await CB.apiPut(`/api/restaurants/${id}`, {
         name: document.getElementById('rest-name').value.trim(),
         description: document.getElementById('rest-desc').value.trim() || null,
@@ -368,7 +379,16 @@
         phone: document.getElementById('rest-phone').value.trim() || null,
         address: document.getElementById('rest-address').value.trim() || null,
         logo_url: document.getElementById('rest-logo').value.trim() || null,
+        opening_time: document.getElementById('rest-opening').value || null,
+        closing_time: document.getElementById('rest-closing').value || null,
       });
+      // Then upload any new restaurant images
+      const imageFiles = document.getElementById('rest-images').files;
+      if (imageFiles.length > 0) {
+        const form = new FormData();
+        for (const f of imageFiles) form.append('images', f);
+        await CB.apiPost(`/api/restaurants/${id}/images`, form);
+      }
       document.getElementById('rest-modal').classList.add('hidden');
       CB.showToast('Restaurant updated.', 'success');
       await loadRestaurantsList();
@@ -484,6 +504,24 @@
     count.className = 'text-xs mt-1 ' + (total >= 2 ? 'text-emerald-600 font-semibold' : 'text-red-500 font-semibold');
   }
 
+  /* Restaurant image previews (for edit modal) */
+  function renderRestImagePreviews(images) {
+    const previews = document.getElementById('rest-image-previews');
+    const count = document.getElementById('rest-image-count');
+    if (!previews) return;
+
+    const local = Array.from(document.getElementById('rest-images').files || []);
+    const total = (images?.length || 0) + local.length;
+
+    previews.innerHTML = [
+      ...(images || []).map((src) => `<img src="${src}" class="w-full h-16 object-cover rounded-lg border border-slate-200" alt="existing photo">`),
+      ...local.map((f) => `<img src="${URL.createObjectURL(f)}" class="w-full h-16 object-cover rounded-lg border border-amber-300" alt="new photo">`),
+    ].join('');
+
+    count.textContent = `Photos: ${total} ${local.length ? `(${local.length} new)` : ''}`;
+    count.className = 'text-xs mt-1 text-slate-500';
+  }
+
   async function openItemModal(item) {
     const rid = selectedRestaurantId || restaurants[0].id;
 
@@ -545,6 +583,7 @@
 
   document.getElementById('item-cancel').addEventListener('click', () => document.getElementById('item-modal').classList.add('hidden'));
   document.getElementById('item-images').addEventListener('change', renderItemImagePreviews);
+  document.getElementById('rest-images').addEventListener('change', () => renderRestImagePreviews([]));
   document.getElementById('item-save').addEventListener('click', async () => {
     const id = document.getElementById('item-id').value;
     const btn = document.getElementById('item-save');

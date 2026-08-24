@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS restaurants (
   address       VARCHAR(255)  DEFAULT NULL,
   phone         VARCHAR(20)   DEFAULT NULL,
   logo_url      VARCHAR(500)  DEFAULT NULL,
+  opening_time  TIME          DEFAULT NULL,           -- e.g. '07:00:00'
+  closing_time  TIME          DEFAULT NULL,           -- e.g. '21:00:00'
   is_active     TINYINT(1)    NOT NULL DEFAULT 1,     -- soft delete flag
   created_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_restaurants_owner FOREIGN KEY (owner_id)
@@ -50,6 +52,23 @@ CREATE TABLE IF NOT EXISTS restaurants (
   UNIQUE KEY uq_restaurants_owner (owner_id),
   INDEX idx_restaurants_cuisine (cuisine_type),
   INDEX idx_restaurants_active (is_active)
+) ENGINE = InnoDB;
+
+-- ------------------------------------------------------------
+-- 2a. restaurant_images
+-- Gallery/cover photos for restaurants (separate from menu item images).
+-- One image can be marked as the cover (is_cover=1).
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS restaurant_images (
+  id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  restaurant_id BIGINT UNSIGNED NOT NULL,
+  image_url     VARCHAR(500)  NOT NULL,
+  is_cover      TINYINT(1)    NOT NULL DEFAULT 0,
+  position      INT UNSIGNED  NOT NULL DEFAULT 0,
+  created_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_restaurant_images_restaurant FOREIGN KEY (restaurant_id)
+    REFERENCES restaurants (id) ON DELETE CASCADE,
+  INDEX idx_restaurant_images_restaurant (restaurant_id)
 ) ENGINE = InnoDB;
 
 -- ------------------------------------------------------------

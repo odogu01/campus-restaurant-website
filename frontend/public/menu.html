@@ -64,17 +64,55 @@
       try {
         const data = await CampusBites.apiGet('/api/restaurants/' + id);
         skel.classList.add('hidden');
-        header.classList.remove('hidden');
 
         document.title = data.restaurant.name + ' — Campus Bites';
         document.getElementById('restaurant-name').textContent = data.restaurant.name;
         document.getElementById('restaurant-desc').textContent = data.restaurant.description || '';
-        document.getElementById('restaurant-logo').innerHTML = data.restaurant.logo_url
+
+        // Check if restaurant is open
+        const isOpen = data.restaurant.is_open !== false;
+        if (!isOpen) {
+          header.classList.remove('hidden');
+          document.getElementById('restaurant-logo').innerHTML = data.restaurant.logo_url
+            ? `<img src="${data.restaurant.logo_url}" class="w-full h-full object-cover rounded-2xl" alt="">`
+            : '🍽️';
+          document.getElementById('restaurant-meta').innerHTML = `
+            <span class="badge badge-cancelled text-lg px-4 py-2">Closed</span>
+            ${data.restaurant.opening_time || data.restaurant.closing_time
+              ? `<p class="text-slate-500 mt-2 text-sm">Open ${data.restaurant.opening_time || '00:00'}–${data.restaurant.closing_time || '23:59'}</p>`
+              : ''}`;
+          empty.textContent = 'This restaurant is currently closed. Please check back during opening hours.';
+          empty.classList.remove('hidden');
+          return;
+        }
+
+        header.classList.remove('hidden');
+        // Restaurant logo + gallery images
+        const logoHtml = data.restaurant.logo_url
           ? `<img src="${data.restaurant.logo_url}" class="w-full h-full object-cover rounded-2xl" alt="">`
           : '🍽️';
+        document.getElementById('restaurant-logo').innerHTML = logoHtml;
+
+        // Render gallery images if available
+        if (data.restaurant.images && data.restaurant.images.length > 0) {
+          const gallery = data.restaurant.images.filter((img) => !img.is_cover).slice(0, 3);
+          if (gallery.length > 0) {
+            const galleryHtml = gallery.map((img) =>
+              `<img src="${img.image_url}" class="w-16 h-16 rounded-xl object-cover border border-slate-100" alt="">`
+            ).join('');
+            document.getElementById('restaurant-logo').innerHTML += `
+              <div class="flex flex-wrap gap-2 mt-2">
+                ${galleryHtml}
+              </div>`;
+          }
+        }
+
         document.getElementById('restaurant-meta').innerHTML = [
           data.restaurant.cuisine_type ? `<span class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full text-xs font-semibold">${data.restaurant.cuisine_type}</span>` : '',
           data.restaurant.address ? `<span class="text-slate-400 text-sm">📍 ${data.restaurant.address}</span>` : '',
+          data.restaurant.opening_time || data.restaurant.closing_time
+            ? `<span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-semibold">Open ${data.restaurant.opening_time || '00:00'}–${data.restaurant.closing_time || '23:59'}</span>`
+            : `<span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-semibold">Always open</span>`,
         ].join('');
 
         const available = data.menu.filter((m) => m.is_available === 1 || m.is_available === true);

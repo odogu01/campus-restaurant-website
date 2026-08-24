@@ -47,6 +47,31 @@ const upload = multer({
   },
 });
 
+/**
+ * Multer configuration for restaurant image uploads (logo, gallery).
+ * Same rules as menu images but with 'restaurant-' prefix for filenames.
+ */
+const restaurantStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const unique = `restaurant-${Date.now()}-${crypto.randomBytes(4).toString('hex')}${ext}`;
+    cb(null, unique);
+  },
+});
+
+const uploadRestaurant = multer({
+  storage: restaurantStorage,
+  limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext) && !String(file.mimetype).startsWith('image/')) {
+      return cb(new Error('Only image files are allowed (jpg, jpeg, png, webp, gif).'));
+    }
+    return cb(null, true);
+  },
+});
+
 /** Build the public URL for an uploaded file. */
 function publicUrl(file) {
   return `/uploads/${file.filename}`;
@@ -59,4 +84,4 @@ function cleanupFiles(files) {
   }
 }
 
-module.exports = { upload, UPLOAD_DIR, publicUrl, cleanupFiles, MAX_FILES };
+module.exports = { upload, uploadRestaurant, UPLOAD_DIR, publicUrl, cleanupFiles, MAX_FILES };

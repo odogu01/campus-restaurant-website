@@ -47,7 +47,17 @@
           <div><label class="block text-sm font-semibold text-slate-700 mb-1">Phone</label><input id="rest-phone" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-amber-400 outline-none" /></div>
         </div>
         <div><label class="block text-sm font-semibold text-slate-700 mb-1">Address</label><input id="rest-address" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-amber-400 outline-none" /></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-sm font-semibold text-slate-700 mb-1">Opening time</label><input id="rest-opening" type="time" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-amber-400 outline-none" /></div>
+          <div><label class="block text-sm font-semibold text-slate-700 mb-1">Closing time</label><input id="rest-closing" type="time" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-amber-400 outline-none" /></div>
+        </div>
         <div><label class="block text-sm font-semibold text-slate-700 mb-1">Logo URL (optional)</label><input id="rest-logo" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-amber-400 outline-none" /></div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Restaurant photos</label>
+          <input id="rest-images" type="file" accept="image/*" multiple class="w-full text-sm text-slate-600 file:mr-3 file:px-4 file:py-2 file:rounded-xl file:border-0 file:bg-amber-50 file:text-amber-700 file:font-bold hover:file:bg-amber-100 cursor-pointer" />
+          <div id="rest-image-previews" class="grid grid-cols-4 gap-2 mt-2"></div>
+          <p id="rest-image-count" class="text-xs text-slate-400 mt-1"></p>
+        </div>
       </div>
       <div class="flex gap-3 mt-5">
         <button id="rest-cancel" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-600 transition-colors">Cancel</button>

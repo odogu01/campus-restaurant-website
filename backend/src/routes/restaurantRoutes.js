@@ -16,6 +16,10 @@
  *   PUT    /api/proteins/:id                    — owner/admin { name?, price?, is_primary? }
  *   DELETE /api/proteins/:id                    — owner/admin
  *
+ *   POST   /api/restaurants/:id/images          — owner/admin (multipart, images[])
+ *   DELETE /api/restaurant-images/:imageId      — owner/admin
+ *   PUT    /api/restaurant-images/:imageId      — owner/admin { is_cover? }
+ *
  *   GET    /api/restaurants/:restaurantId/menu  — public
  *   POST   /api/restaurants/:restaurantId/menu  — owner/admin (food_id + images + protein_ids[])
  *   PUT    /api/menu/:itemId                    — owner/admin
@@ -38,6 +42,9 @@ const {
   createProtein,
   updateProtein,
   deleteProtein,
+  uploadRestaurantImages,
+  deleteRestaurantImage,
+  updateRestaurantImage,
 } = require('../controllers/restaurantController');
 
 const {
@@ -51,7 +58,7 @@ const {
 const { protect, optionalAuth } = require('../middleware/auth');
 const { requireRestaurantOwner, requireItemRestaurantOwner, requireFoodOwner, requireProteinOwner } = require('../middleware/ownership');
 const { validate } = require('../middleware/validate');
-const { upload } = require('../config/uploads');
+const { upload, uploadRestaurant } = require('../config/uploads');
 
 const router = express.Router();
 
@@ -62,6 +69,8 @@ const restaurantRules = [
   body('address').optional({ values: 'falsy' }).trim().isLength({ max: 255 }),
   body('phone').optional({ values: 'falsy' }).trim().isLength({ max: 20 }),
   body('logo_url').optional({ values: 'falsy' }).trim().isURL().withMessage('logo_url must be a valid URL').isLength({ max: 500 }),
+  body('opening_time').optional({ values: 'falsy' }).matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('opening_time must be HH:MM'),
+  body('closing_time').optional({ values: 'falsy' }).matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('closing_time must be HH:MM'),
 ];
 
 const foodRules = [
@@ -93,6 +102,30 @@ router.post('/restaurants', protect, restaurantRules, validate, createRestaurant
 router.put('/restaurants/:id', protect, [idParam('id')], restaurantRules, validate, requireRestaurantOwner, updateRestaurant);
 router.delete('/restaurants/:id', protect, [idParam('id')], validate, requireRestaurantOwner, softDeleteRestaurant);
 router.get('/vendor/restaurants', protect, getMyRestaurants);
+
+/* ---- Restaurant Images (owner/admin) ---- */
+router.post(
+  '/restaurants/:id/images',
+  protect,
+  [idParam('id')],
+  requireRestaurantOwner,
+  uploadRestaurant.array('images', 5),
+  uploadRestaurantImages
+);
+router.delete(
+  '/restaurant-images/:imageId',
+  protect,
+  [param('imageId').isInt({ min: 1 })],
+  validate,
+  deleteRestaurantImage
+);
+router.put(
+  '/restaurant-images/:imageId',
+  protect,
+  [param('imageId').isInt({ min: 1 })],
+  validate,
+  updateRestaurantImage
+);
 
 /* ---- Foods & Proteins (owner/admin) ---- */
 router.get('/restaurants/:id/foods', protect, [idParam('id')], validate, requireRestaurantOwner, listFoods);

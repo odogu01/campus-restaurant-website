@@ -41,7 +41,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.2.0",
     "mysql2": "^3.11.5",
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^6.10.1"
   },
   "allowScripts": {
     "bcrypt@5.1.1": true

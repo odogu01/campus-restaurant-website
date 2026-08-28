@@ -8,7 +8,13 @@
 const bcrypt = require('bcrypt');
 const db = require('../config/db');
 const { generatePassword } = require('../utils/passwordGenerator');
-const { sendApprovalEmail, sendRejectionEmail, isConfigured } = require('../utils/email');
+const {
+  vendorApprovalEmail,
+  vendorRejectionEmail,
+  sendMail,
+  isConfigured: isEmailConfigured,
+} = require('../utils/email');
+const { FRONTEND_URL = 'http://localhost:5000' } = process.env;
 
 const BCRYPT_ROUNDS = 10;
 
@@ -120,7 +126,12 @@ async function reviewVendorRequest(req, res, next) {
       );
 
       // Email is best-effort: log a warning if it fails, don't break the API.
-      await sendRejectionEmail(request.email, adminComment, request.restaurant_name).catch((e) =>
+      const rejectionEmail = require('../utils/email').vendorRejectionEmail({
+        vendorName: request.restaurant_name,
+        restaurantName: request.restaurant_name,
+        adminComment,
+      });
+      await sendMail({ to: request.email, ...rejectionEmail }).catch((e) =>
         console.warn('[EMAIL] rejection email failed:', e.message)
       );
 
@@ -175,7 +186,14 @@ async function reviewVendorRequest(req, res, next) {
     }
 
     // 4. Send the approval email with the PLAIN-TEXT password.
-    await sendApprovalEmail(request.email, generatedPassword, request.restaurant_name).catch((e) =>
+    const loginUrl = `${FRONTEND_URL}/login.html`;
+    const approvalEmail = require('../utils/email').vendorApprovalEmail({
+      vendorName: request.restaurant_name,
+      vendorEmail: request.email,
+      devPassword: generatedPassword,
+      loginUrl,
+    });
+    await sendMail({ to: request.email, ...approvalEmail }).catch((e) =>
       console.warn('[EMAIL] approval email failed:', e.message)
     );
 
@@ -184,11 +202,14 @@ async function reviewVendorRequest(req, res, next) {
       request: { id: request.id, email: request.email, restaurant_name: request.restaurant_name, status: 'approved' },
     };
 
-    // In dev mode (no SMTP configured) expose the generated password so the
-    // flow can be tested end-to-end. NEVER returned when real email is on.
-    if (!isConfigured()) {
+    // In dev mode (no SMTP configured) OR test mode, expose the generated password
+    // so the flow can be tested end-to-end. NEVER returned in production.
+    const isTestMode = process.env.TEST_MODE === 'true';
+    if (!isEmailConfigured() || isTestMode) {
       response.devPassword = generatedPassword;
-      response.emailNote = 'EMAIL_NOT_CONFIGURED — password exposed for testing only.';
+      response.emailNote = isTestMode
+        ? 'TEST_MODE — password exposed for testing only.'
+        : 'EMAIL_NOT_CONFIGURED — password exposed for testing only.';
     }
 
     return res.json(response);

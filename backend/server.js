@@ -93,11 +93,15 @@ app.use((err, req, res, next) => {
 /* Start                                                               */
 /* ------------------------------------------------------------------ */
 
-app.listen(PORT, () => {
+if (require.main === module) {
+  app.listen(PORT, () => {
   console.log(`==============================================`);
   console.log(`  Campus Restaurant API`);
   console.log(`  Listening on http://localhost:${PORT}`);
   console.log(`  Health check: http://localhost:${PORT}/ping`);
   console.log(`  PAYMENT_ENABLED = ${process.env.PAYMENT_ENABLED || 'false'} (simulated payments)`);
   console.log(`==============================================`);
-});
+  });
+}
+
+module.exports = app;

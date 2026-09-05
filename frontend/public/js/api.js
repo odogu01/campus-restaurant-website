@@ -6,12 +6,12 @@
  * - Throws a friendly Error containing the backend's error message.
  */
 
-// When the site is served by Express on :5000, requests are same-origin ('').
-// When opened from another port (e.g. VS Code live server on 5500), fall back
-// to the API origin. CORS on the backend already allows localhost:5500.
+// Use the same origin whenever the site is served over HTTP(S). This works for
+// Express locally and for the Vercel rewrite in production. A local fallback
+// remains for opening the HTML files directly from disk.
 const API_BASE = (() => {
   try {
-    if (window.location.origin && window.location.origin.includes(':5000')) {
+    if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
       return window.location.origin; // same server — no CORS needed
     }
   } catch { /* file:// etc */ }

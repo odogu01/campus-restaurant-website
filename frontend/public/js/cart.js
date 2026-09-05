@@ -8,7 +8,7 @@
  *   }] }
  */
 (function () {
-  const KEY = 'campus_bites_cart';
+  const KEY = 'uni_bites_cart';
 
   function loadCart() {
     try { return JSON.parse(localStorage.getItem(KEY) || 'null') || null; } catch { return null; }
@@ -127,7 +127,7 @@
     localStorage.removeItem(KEY);
   }
 
-  window.CampusBites.cart = {
+  window.UniBites.cart = {
     addToCart,
     removeFromCart,
     setQuantity,

@@ -8,7 +8,7 @@
  *   then redirects to orders.html after 3 seconds.
  */
 (function () {
-  const CB = window.CampusBites;
+  const CB = window.UniBites;
   if (!CB) return;
 
   const cart = () => CB.cart.getCart();

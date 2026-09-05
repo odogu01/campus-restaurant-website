@@ -8,7 +8,7 @@
  *   only the customer can confirm delivery, and that credits the vendor.
  */
 (function () {
-  const CB = window.CampusBites;
+  const CB = window.UniBites;
   if (!CB) return;
 
   const POLL_INTERVAL_MS = 5000;

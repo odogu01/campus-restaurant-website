@@ -1,4 +1,4 @@
-# Deploying Campus Bites on Vercel
+# Deploying UniBites on Vercel
 
 1. Push this repository to GitHub, then import it in Vercel with the repository root as the project root.
 2. Leave the framework preset as **Other**. The included `vercel.json` publishes `frontend/public` and rewrites `/api/*` to the Express function.

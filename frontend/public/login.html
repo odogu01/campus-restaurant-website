@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login — Campus Bites</title>
+  <title>Login — UniBites</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -58,7 +58,7 @@
         </form>
 
         <div class="text-center mt-6 text-sm text-slate-500">
-          New to Campus Bites?
+          New to UniBites?
           <a href="register.html" class="text-amber-600 font-semibold hover:text-amber-700 transition-colors">Create an account</a>
         </div>
         <div class="text-center mt-2 text-xs text-slate-400">
@@ -83,7 +83,7 @@
   <script src="js/auth.js"></script>
   <script>
     // Already logged in? Skip the form.
-    const user = CampusBites.getStoredUser();
+    const user = UniBites.getStoredUser();
     if (user) {
       const dest = user.role === 'admin' ? 'admin-dashboard.html'
                  : user.role === 'restaurant_owner' ? 'vendor-dashboard.html'

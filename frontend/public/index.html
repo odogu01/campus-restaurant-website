@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Campus Bites — Order from campus restaurants</title>
+  <title>UniBites — Order from campus restaurants</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -115,7 +115,7 @@
       <h2 class="text-2xl md:text-3xl font-extrabold">Are you a campus chef?</h2>
       <p class="mt-2 text-amber-100">Bring your food to thousands of hungry students. It takes two minutes to apply.</p>
       <a href="vendor-register.html" class="mt-6 inline-block bg-white text-orange-600 font-bold px-8 py-3 rounded-xl hover:bg-amber-50 transition-colors duration-200">
-        Apply to sell on Campus Bites
+        Apply to sell on UniBites
       </a>
     </div>
   </section>
@@ -127,7 +127,7 @@
   <script src="js/main.js"></script>
   <script>
     // Homepage: featured restaurants + fresh picks (all foods).
-    CampusBites.registerPage('index', async function () {
+    UniBites.registerPage('index', async function () {
       const grid = document.getElementById('featured-grid');
       const skel = document.getElementById('featured-skeleton');
       const empty = document.getElementById('featured-empty');
@@ -136,7 +136,7 @@
       const fempty = document.getElementById('foods-empty');
 
       try {
-        const data = await CampusBites.apiGet('/api/restaurants');
+        const data = await UniBites.apiGet('/api/restaurants');
         skel.classList.add('hidden');
         const featured = data.restaurants.slice(0, 6);
 
@@ -174,7 +174,7 @@
       }
 
       try {
-        const fdata = await CampusBites.apiGet('/api/menu-items', { auth: false, query: {} });
+        const fdata = await UniBites.apiGet('/api/menu-items', { auth: false, query: {} });
         fskel.classList.add('hidden');
         const picks = fdata.items.slice(0, 6);
         if (picks.length === 0) {
@@ -190,7 +190,7 @@
               <div class="p-4">
                 <div class="flex items-start justify-between gap-2">
                   <h3 class="font-bold text-slate-800 leading-tight">${item.name}</h3>
-                  <p class="font-extrabold text-amber-600 whitespace-nowrap">${CampusBites.formatMoney(item.price)}</p>
+                  <p class="font-extrabold text-amber-600 whitespace-nowrap">${UniBites.formatMoney(item.price)}</p>
                 </div>
                 <p class="text-xs text-amber-600 font-semibold mt-1">${item.restaurant_name}</p>
                 ${item.description ? `<p class="text-sm text-slate-500 mt-1 line-clamp-2">${item.description}</p>` : ''}

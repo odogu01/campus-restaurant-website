@@ -8,7 +8,7 @@
  *   3. Users           — list users + change roles
  */
 (function () {
-  const CB = window.CampusBites;
+  const CB = window.UniBites;
   if (!CB) return;
 
   /* ---------- Guard: admins only ---------- */

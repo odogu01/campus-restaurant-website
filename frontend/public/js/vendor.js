@@ -9,7 +9,7 @@
  *                      (credited only on customer-confirmed delivery)
  */
 (function () {
-  const CB = window.CampusBites;
+  const CB = window.UniBites;
   if (!CB) return;
 
   /* ---------- Guard: restaurant owners only ---------- */

@@ -7,7 +7,7 @@
  *   EMAIL_SECURE=true
  *   EMAIL_USER=pitchpros14@gmail.com
  *   EMAIL_PASS=icqi qyhn qpkm jpgh
- *   EMAIL_FROM="Campus Bites <pitchpros14@gmail.com>"
+ *   EMAIL_FROM="UniBites <pitchpros14@gmail.com>"
  *   FRONTEND_URL=http://localhost:5000
  */
 const nodemailer = require('nodemailer');
@@ -18,7 +18,7 @@ const {
   EMAIL_SECURE = 'true',
   EMAIL_USER,
   EMAIL_PASS,
-  EMAIL_FROM = 'Campus Bites <pitchpros14@gmail.com>',
+  EMAIL_FROM = 'UniBites <pitchpros14@gmail.com>',
   FRONTEND_URL = 'http://localhost:5000',
 } = process.env;
 
@@ -96,9 +96,9 @@ function wrap(template) {
  */
 function vendorApprovalEmail({ vendorName, vendorEmail, devPassword, loginUrl }) {
   return {
-    subject: '🎉 Your Campus Bites vendor account is approved!',
+    subject: '🎉 Your UniBites vendor account is approved!',
     html: wrap(`
-      <div class="header"><h1>Welcome to Campus Bites!</h1></div>
+      <div class="header"><h1>Welcome to UniBites!</h1></div>
       <div class="content">
         <p>Hi <strong>${vendorName}</strong>,</p>
         <p>Your vendor application has been <strong>approved</strong>. You can now log in and start managing your restaurant.</p>
@@ -114,7 +114,7 @@ function vendorApprovalEmail({ vendorName, vendorEmail, devPassword, loginUrl })
         </p>
       </div>
       <div class="footer">
-        Campus Bites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
+        UniBites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
       </div>
     `),
   };
@@ -125,18 +125,18 @@ function vendorApprovalEmail({ vendorName, vendorEmail, devPassword, loginUrl })
  */
 function vendorRejectionEmail({ vendorName, restaurantName, adminComment }) {
   return {
-    subject: '❌ Your Campus Bites vendor application was not approved',
+    subject: '❌ Your UniBites vendor application was not approved',
     html: wrap(`
       <div class="header" style="background:#ef4444;"><h1>Application Update</h1></div>
       <div class="content">
         <p>Hi <strong>${vendorName}</strong>,</p>
-        <p>Thank you for applying to sell on Campus Bites. After review, we're unable to approve your application for <strong>${restaurantName}</strong> at this time.</p>
+        <p>Thank you for applying to sell on UniBites. After review, we're unable to approve your application for <strong>${restaurantName}</strong> at this time.</p>
         <p>Admin note:</p>
         <div class="code" style="background:#fef2f2;color:#991b1b;">${adminComment}</div>
         <p>If you believe this was a mistake or would like to reapply with changes, please contact us.</p>
       </div>
       <div class="footer">
-        Campus Bites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
+        UniBites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
       </div>
     `),
   };
@@ -147,9 +147,9 @@ function vendorRejectionEmail({ vendorName, restaurantName, adminComment }) {
  */
 function vendorApprovalEmail({ vendorName, vendorEmail, devPassword, loginUrl }) {
   return {
-    subject: '🎉 Your Campus Bites vendor account is approved!',
+    subject: '🎉 Your UniBites vendor account is approved!',
     html: wrap(`
-      <div class="header"><h1>Welcome to Campus Bites!</h1></div>
+      <div class="header"><h1>Welcome to UniBites!</h1></div>
       <div class="content">
         <p>Hi <strong>${vendorName}</strong>,</p>
         <p>Your vendor application has been <strong>approved</strong>. You can now log in and start managing your restaurant.</p>
@@ -165,7 +165,7 @@ function vendorApprovalEmail({ vendorName, vendorEmail, devPassword, loginUrl })
         </p>
       </div>
       <div class="footer">
-        Campus Bites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
+        UniBites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
       </div>
     `),
   };
@@ -176,7 +176,7 @@ function vendorApprovalEmail({ vendorName, vendorEmail, devPassword, loginUrl })
  */
 function passwordResetEmail({ userName, userEmail, resetUrl, expiresHours = 1 }) {
   return {
-    subject: '🔐 Reset your Campus Bites password',
+    subject: '🔐 Reset your UniBites password',
     html: wrap(`
       <div class="header"><h1>Password Reset</h1></div>
       <div class="content">
@@ -191,7 +191,7 @@ function passwordResetEmail({ userName, userEmail, resetUrl, expiresHours = 1 })
         </p>
       </div>
       <div class="footer">
-        Campus Bites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
+        UniBites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
       </div>
     `),
   };
@@ -232,7 +232,7 @@ function orderConfirmationEmail({ customerName, orderId, restaurantName, items, 
         </p>
       </div>
       <div class="footer">
-        Campus Bites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
+        UniBites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
       </div>
     `),
   };
@@ -274,7 +274,7 @@ function newOrderVendorEmail({ vendorName, orderId, customerName, customerPhone,
         <p style="font-size:14px;color:#6b7280;">Log in to your vendor dashboard to accept this order.</p>
       </div>
       <div class="footer">
-        Campus Bites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
+        UniBites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
       </div>
     `),
   };
@@ -305,7 +305,7 @@ function orderStatusEmail({ customerName, orderId, restaurantName, status, order
         </p>
       </div>
       <div class="footer">
-        Campus Bites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
+        UniBites · <a href="${FRONTEND_URL}" style="color:#f59e0b;">${FRONTEND_URL}</a>
       </div>
     `),
   };

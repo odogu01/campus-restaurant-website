@@ -5,7 +5,7 @@
  * On success: stores token + user, redirects by role.
  */
 (function () {
-  const CB = window.CampusBites;
+  const CB = window.UniBites;
   if (!CB) return;
 
   /* Small helper: spinner state on a submit button */
@@ -74,7 +74,7 @@
       });
       CB.setToken(data.token);
       CB.setStoredUser(data.user);
-      CB.showToast('Account created — welcome to Campus Bites!', 'success');
+      CB.showToast('Account created — welcome to UniBites!', 'success');
       setTimeout(() => { window.location.href = 'index.html'; }, 800);
     } catch (err) {
       handleError(err);

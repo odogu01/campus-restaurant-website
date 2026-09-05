@@ -1,5 +1,5 @@
 /**
- * api.js — fetch wrapper for the Campus Bites backend.
+ * api.js — fetch wrapper for the UniBites backend.
  *
  * - Central base URL (auto-detects same-origin when served from the API server).
  * - Attaches `Authorization: Bearer <token>` from localStorage.
@@ -18,8 +18,8 @@ const API_BASE = (() => {
   return 'http://localhost:5000';
 })();
 
-const TOKEN_KEY = 'campus_bites_token';
-const USER_KEY = 'campus_bites_user';
+const TOKEN_KEY = 'uni_bites_token';
+const USER_KEY = 'uni_bites_user';
 
 /* ---------- token / user helpers ---------- */
 function getToken() {
@@ -110,7 +110,7 @@ function formatMoney(n) {
   return '₦' + num.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-window.CampusBites = {
+window.UniBites = {
   API_BASE,
   api, apiGet, apiPost, apiPut, apiDelete,
   getToken, setToken, getStoredUser, setStoredUser, clearAuth,

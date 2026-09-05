@@ -7,7 +7,7 @@
  * restaurant menu page).
  */
 (function () {
-  const CB = window.CampusBites;
+  const CB = window.UniBites;
   if (!CB) return;
 
   const state = {

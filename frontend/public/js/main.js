@@ -7,7 +7,7 @@
  * - Per-page initialisers (called from the page's own script or here).
  */
 (function () {
-  const CB = window.CampusBites;
+  const CB = window.UniBites;
   if (!CB) {
     console.error('api.js must be loaded before main.js');
     return;
@@ -62,7 +62,7 @@
     if (isLoggedIn) {
       authArea = `
         ${dashboardLink ? `<a href="${dashboardLink}" class="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors duration-200">Dashboard</a>` : ''}
-        <button onclick="CampusBites.logout()" class="text-sm font-semibold text-slate-600 hover:text-red-600 transition-colors duration-200">Logout</button>
+        <button onclick="UniBites.logout()" class="text-sm font-semibold text-slate-600 hover:text-red-600 transition-colors duration-200">Logout</button>
         <span class="hidden md:inline text-sm text-slate-400">Hi, <span class="text-slate-600 font-medium">${(user.full_name || user.email || '').split(' ')[0]}</span></span>
       `;
     } else {
@@ -115,7 +115,7 @@
   function updateCartBadge() {
     const badge = document.getElementById('cart-count');
     if (!badge) return;
-    const count = window.CampusBites.cart ? window.CampusBites.cart.getCartCount() : 0;
+    const count = window.UniBites.cart ? window.UniBites.cart.getCartCount() : 0;
     if (count > 0) {
       badge.textContent = count;
       badge.classList.remove('hidden');
@@ -148,7 +148,7 @@
           </div>
         </div>
         <div class="border-t border-slate-800 py-4 text-center text-xs">
-          © ${new Date().getFullYear()} Campus Bites · Demo project · Payments simulated
+          © ${new Date().getFullYear()} UniBites · Demo project · Payments simulated
         </div>
       </footer>
     `;
@@ -224,9 +224,9 @@
   });
 
   /* Expose globals used by inline handlers */
-  window.CampusBites.showToast = showToast;
-  window.CampusBites.logout = logout;
-  window.CampusBites.registerPage = registerPage;
-  window.CampusBites.updateCartBadge = updateCartBadge;
-  window.CampusBites.currentPage = currentPage;
+  window.UniBites.showToast = showToast;
+  window.UniBites.logout = logout;
+  window.UniBites.registerPage = registerPage;
+  window.UniBites.updateCartBadge = updateCartBadge;
+  window.UniBites.currentPage = currentPage;
 })();

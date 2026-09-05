@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Restaurants — Campus Bites</title>
+  <title>Restaurants — UniBites</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -51,7 +51,7 @@
       'from-rose-400 to-pink-500','from-violet-400 to-purple-500','from-lime-400 to-green-500',
     ];
 
-    CampusBites.registerPage('restaurants', async function () {
+    UniBites.registerPage('restaurants', async function () {
       const params = new URLSearchParams(window.location.search);
       const search = params.get('search') || '';
       let cuisine = params.get('cuisine') || '';
@@ -75,7 +75,7 @@
       empty.classList.add('hidden');
 
       try {
-        const data = await CampusBites.apiGet('/api/restaurants', {
+        const data = await UniBites.apiGet('/api/restaurants', {
           query: { search, cuisine },
         });
         skel.classList.add('hidden');

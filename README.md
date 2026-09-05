@@ -1,4 +1,4 @@
-# 🍔 Campus Bites
+# 🍔 UniBites
 
 **A full-stack campus restaurant ordering platform** — connect students with campus food vendors, browse real menus with photos, customize orders with proteins, and track everything from placement to delivery.
 
@@ -31,7 +31,7 @@
 
 ## What Is This?
 
-Campus Bites is a web application that allows students to browse campus restaurants, view menus with photos, place orders with protein customizations (e.g. Jollof rice + goat meat + chicken), and track their orders in real time — all from their phone or laptop.
+UniBites is a web application that allows students to browse campus restaurants, view menus with photos, place orders with protein customizations (e.g. Jollof rice + goat meat + chicken), and track their orders in real time — all from their phone or laptop.
 
 It is built specifically for the **Nigerian campus food context**, where dishes like Jollof rice, fried rice, and grilled chicken are sold "with protein" — and protein choice and quantity are a core part of every order.
 
@@ -47,7 +47,7 @@ Campus food ordering today is chaotic:
 - **No trust** — cash-on-delivery with no record of what was ordered or paid
 - **Vendor operations are manual** — no system for managing menus, prices, or order queues
 
-Campus Bites solves all of these problems in one platform.
+UniBites solves all of these problems in one platform.
 
 ---
 

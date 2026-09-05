@@ -78,7 +78,7 @@
           <div class="flex items-center justify-between h-16">
             <a href="index.html" class="flex items-center gap-2">
               <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white font-black text-lg shadow">🍔</span>
-              <span class="text-xl font-extrabold text-slate-800 tracking-tight">Campus<span class="text-amber-500">Bites</span></span>
+              <span class="text-xl font-extrabold text-slate-800 tracking-tight">Uni<span class="text-amber-500">Bites</span></span>
             </a>
 
             <!-- desktop links -->
@@ -132,7 +132,7 @@
       <footer class="bg-slate-900 text-slate-400 mt-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <p class="text-white font-extrabold text-lg mb-2">Campus<span class="text-amber-500">Bites</span></p>
+            <p class="text-white font-extrabold text-lg mb-2">Uni<span class="text-amber-500">Bites</span></p>
             <p class="text-sm">Order from your favourite campus restaurants and pick up on your way to class.</p>
           </div>
           <div class="text-sm space-y-2">

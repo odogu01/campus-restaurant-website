@@ -6,7 +6,7 @@
  *
  * Phases 2+ will mount auth, vendor, restaurant, menu and order routes here.
  */
-require('dotenv').config();
+require('./src/config/env');
 
 const express = require('express');
 const cors = require('cors');
@@ -72,8 +72,10 @@ app.use('/api', require('./src/routes/adminRoutes'));
 const path = require('path');
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
 
-// Uploaded menu item images (backend/uploads/) — public at /uploads/...
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Uploaded menu item images — public at /uploads/...
+// Vercel uses the writable /tmp directory; local development uses backend/uploads.
+const { UPLOAD_DIR } = require('./src/config/uploads');
+app.use('/uploads', express.static(UPLOAD_DIR));
 
 /* ------------------------------------------------------------------ */
 /* 404 + error handler (JSON, not HTML)                                */

@@ -8,7 +8,7 @@
  * The pool is lazy: it does not open sockets until the first query runs,
  * so the server can boot even before the database is reachable.
  */
-require('dotenv').config();
+require('./env');
 
 const mysql = require('mysql2/promise');
 

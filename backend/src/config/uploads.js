@@ -1,8 +1,9 @@
 /**
  * Multer configuration for menu item image uploads.
  *
- * Files are stored on disk under backend/uploads/ and served publicly
- * at /uploads/<filename>. Rules:
+ * Files are stored under backend/uploads/ locally and served publicly at
+ * /uploads/<filename>. On Vercel, only /tmp is writable, so Multer uses a
+ * temporary directory there. Rules:
  *   - images only (jpg, jpeg, png, webp, gif)
  *   - max 5 MB per file
  *   - max 5 files per request
@@ -15,7 +16,9 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
-const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads');
+const UPLOAD_DIR = process.env.VERCEL
+  ? path.join('/tmp', 'unibites-uploads')
+  : path.join(__dirname, '..', '..', 'uploads');
 
 // Ensure the upload directory exists at boot.
 if (!fs.existsSync(UPLOAD_DIR)) {

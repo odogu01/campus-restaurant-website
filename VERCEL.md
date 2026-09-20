@@ -15,4 +15,4 @@
 
 ## Important upload limitation
 
-Vercel Functions do not provide persistent disk storage. The existing menu and restaurant image upload feature writes files to `backend/uploads`, which is suitable locally but not for production Vercel hosting. Use an object-storage provider (such as Vercel Blob, Cloudinary, or S3) and update `backend/src/config/uploads.js` before allowing production image uploads. Existing image URLs that point to `/uploads/...` must also be migrated to that provider.
+Vercel Functions can write only to `/tmp`; this project uses that directory automatically so the API can start and accept an image upload. Those files are ephemeral and are not reliable across function instances or deployments. Use object storage (such as Vercel Blob, Cloudinary, or S3) for durable production image uploads, and migrate existing `/uploads/...` URLs before relying on them.

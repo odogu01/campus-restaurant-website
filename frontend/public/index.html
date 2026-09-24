@@ -14,18 +14,20 @@
   <header id="site-header"></header>
 
   <!-- ============ HERO ============ -->
-  <section class="hero-gradient text-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-28 text-center animate-fadeIn">
-      <h1 class="text-4xl md:text-6xl font-black tracking-tight leading-tight">
-        Hungry between classes?
-        <span class="text-amber-400 block">Order from campus favourites.</span>
-      </h1>
-      <p class="mt-4 text-lg text-slate-300 max-w-2xl mx-auto">
-        Browse restaurants, pick your meal, pay instantly, and grab it on your way to the next lecture.
-      </p>
+  <section class="hero-gradient hero-home text-white overflow-hidden">
+    <div class="hero-shell max-w-7xl mx-auto px-4 sm:px-6 py-14 md:py-20">
+      <div class="hero-copy animate-fadeIn">
+        <span class="hero-kicker"><span class="hero-kicker-dot"></span> Your campus, served fresh</span>
+        <h1 class="mt-5 text-4xl md:text-6xl font-black tracking-tight leading-tight">
+          Hungry between classes?
+          <span class="hero-accent block">Your next favourite is a few taps away.</span>
+        </h1>
+        <p class="mt-5 text-lg text-slate-300 max-w-xl">
+          Discover the best bites around campus, order ahead, and spend less time waiting and more time enjoying.
+        </p>
 
       <!-- search bar -->
-      <form id="home-search" class="mt-8 max-w-xl mx-auto flex items-center bg-white rounded-2xl shadow-xl p-1.5">
+      <form id="home-search" class="hero-search mt-8 max-w-xl flex items-center bg-white rounded-2xl shadow-xl p-1.5">
         <input
           id="home-search-input"
           type="text"
@@ -37,10 +39,24 @@
         </button>
       </form>
 
-      <div class="mt-8 flex flex-wrap justify-center gap-3 text-sm">
-        <a href="restaurants.html" class="bg-white/10 hover:bg-white/20 backdrop-blur px-5 py-2.5 rounded-full font-semibold transition-colors duration-200">Browse all restaurants</a>
-        <a href="foods.html" class="bg-white/10 hover:bg-white/20 backdrop-blur px-5 py-2.5 rounded-full font-semibold transition-colors duration-200">Browse all foods</a>
-        <a href="vendor-register.html" class="bg-white/10 hover:bg-white/20 backdrop-blur px-5 py-2.5 rounded-full font-semibold transition-colors duration-200">Open a restaurant</a>
+      <div class="mt-7 flex flex-wrap gap-3 text-sm">
+        <a href="restaurants.html" class="hero-link hero-link-primary">Explore restaurants <span aria-hidden="true">→</span></a>
+        <a href="foods.html" class="hero-link">Browse all foods</a>
+        <a href="vendor-register.html" class="hero-link">Open a restaurant</a>
+      </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-orbit hero-orbit-one"></div>
+        <div class="hero-orbit hero-orbit-two"></div>
+        <div class="hero-image-frame">
+          <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=85" alt="Colourful fresh lunch bowl with vegetables" />
+          <div class="hero-image-shade"></div>
+          <div class="hero-image-caption"><span class="caption-icon">✦</span><span><strong>Freshly made</strong><small>Good food, right on time</small></span></div>
+        </div>
+        <div class="hero-float-card hero-rating"><span class="rating-star">★</span><span><strong>Campus favourites</strong><small>Picked for you</small></span></div>
+        <div class="hero-float-card hero-pickup"><span class="pickup-icon">↗</span><span><strong>Ready when you are</strong><small>Order ahead & pick up</small></span></div>
+        <span class="hero-spark hero-spark-one">✳</span><span class="hero-spark hero-spark-two">✦</span>
       </div>
     </div>
   </section>
